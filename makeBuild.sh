@@ -22,19 +22,23 @@ done
 # build
 source ./build/envsetup.sh
 if [[ $isClean == 1 ]]; then
-  echo 'Cleaning build'
+  echo 'Cleanning build'
   make clobber
 fi
 lunch aosip_dumpling-userdebug
+telegram-send "Build started"
 mka kronic
 
 # handle build file
 if [[ $? = '0' ]]; then # if build succeeded
+  telegram-send "Build done"
   if [[ $isUpload == 1 ]]; then
+    telegram-send "Uploading build"
     echo "Uploading..."
     rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip 'GDrive:/builds'
     rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum 'GDrive:/builds'
     if [ $? = '0' ]; then
+      telegram-send "Upload done"
       dolphin 'gdrive:/idoybh2/builds/' &> /dev/null &
       disown
       exit 0
@@ -63,4 +67,5 @@ if [[ $? = '0' ]]; then # if build succeeded
   exit 0
 fi
 # If build fails:
+telegram-send "Build failed"
 exit $?
