@@ -33,12 +33,30 @@ lunch aosip_dumpling-userdebug
 if [[ $isSilent == 0 ]]; then
   telegram-send "Build started"
 fi
-mka kronic
+start_time=$(date +"%s")
+
+mka kronic # build
+# no commands allowed in here!
+buildRes=$? # save result
+
+end_time=$(date +"%s")
+tdiff=$(($end_time-$start_time)) # time diff
+hours=$(($tdiff / 3600 ))
+mins=$((($tdiff % 3600) / 60))
+secs=$(($tdiff % 60))
+buildTime=""
+if [[ $hours -gt 0 ]]; then
+  buildTime="${hours}:${mins}:${secs} (hh:mm:ss)"
+elif [[ $mins -gt 0 ]]; then
+  buildTime="${mins}:${secs} (mm:ss)"
+else
+  buildTime="${secs} seconds"
+fi
 
 # handle build file
-if [[ $? = '0' ]]; then # if build succeeded
+if [[ $buildRes = '0' ]]; then # if build succeeded
   if [[ $isSilent == 0 ]]; then
-    telegram-send "Build done"
+    telegram-send "Build done in ${buildTime}"
   fi
   if [[ $isUpload == 1 ]]; then
     if [[ $isSilent == 0 ]]; then
@@ -80,6 +98,6 @@ if [[ $? = '0' ]]; then # if build succeeded
 fi
 # If build fails:
 if [[ $isSilent == 0 ]]; then
-  telegram-send "Build failed"
+  telegram-send "Build failed after ${buildTime}"
 fi
 exit $?
