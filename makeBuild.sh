@@ -4,7 +4,8 @@
 isUpload=0
 isPush=0
 isClean=0
-while getopts ":upc" opt; do
+isSilent=0
+while getopts ":upcs" opt; do
   case $opt in
     u )
     echo 'User build!'
@@ -16,6 +17,9 @@ while getopts ":upc" opt; do
     c )
     isClean=1
     ;;
+    s )
+    isSilent=1
+    ;;
   esac
 done
 
@@ -26,19 +30,27 @@ if [[ $isClean == 1 ]]; then
   make clobber
 fi
 lunch aosip_dumpling-userdebug
-telegram-send "Build started"
+if [[ $isSilent == 0 ]]; then
+  telegram-send "Build started"
+fi
 mka kronic
 
 # handle build file
 if [[ $? = '0' ]]; then # if build succeeded
-  telegram-send "Build done"
+  if [[ $isSilent == 0 ]]; then
+    telegram-send "Build done"
+  fi
   if [[ $isUpload == 1 ]]; then
-    telegram-send "Uploading build"
+    if [[ $isSilent == 0 ]]; then
+      telegram-send "Uploading build"
+    fi
     echo "Uploading..."
     rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip 'GDrive:/builds'
     rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum 'GDrive:/builds'
     if [ $? = '0' ]; then
-      telegram-send "Upload done"
+      if [[ $isSilent == 0 ]]; then
+        telegram-send "Upload done"
+      fi
       dolphin 'gdrive:/idoybh2/builds/' &> /dev/null &
       disown
       exit 0
@@ -67,5 +79,7 @@ if [[ $? = '0' ]]; then # if build succeeded
   exit 0
 fi
 # If build fails:
-telegram-send "Build failed"
+if [[ $isSilent == 0 ]]; then
+  telegram-send "Build failed"
+fi
 exit $?
