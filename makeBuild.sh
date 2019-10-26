@@ -29,7 +29,7 @@ if [[ $isClean == 1 ]]; then
   echo 'Cleanning build'
   make clobber
 fi
-lunch aosip_dumpling-userdebug
+lunch aosip_dumpling-userdebug # target
 if [[ $isSilent == 0 ]]; then
   telegram-send "Build started"
 fi
@@ -41,14 +41,29 @@ buildRes=$? # save result
 
 end_time=$(date +"%s")
 tdiff=$(($end_time-$start_time)) # time diff
+
 hours=$(($tdiff / 3600 ))
+hoursOut=$hours
+if [[ ${#hours} -lt 2 ]]; then
+  hoursOut="0${hours}"
+fi
+
 mins=$((($tdiff % 3600) / 60))
+minsOut=$mins
+if [[ ${#mins} -lt 2 ]]; then
+  minsOut="0${mins}"
+fi
+
 secs=$(($tdiff % 60))
-buildTime=""
+if [[ ${#secs} -lt 2 ]]; then
+  secs="0${secs}"
+fi
+
+buildTime="" # will store the time to output
 if [[ $hours -gt 0 ]]; then
-  buildTime="${hours}:${mins}:${secs} (hh:mm:ss)"
+  buildTime="${hoursOut}:${minsOut}:${secs} (hh:mm:ss)"
 elif [[ $mins -gt 0 ]]; then
-  buildTime="${mins}:${secs} (mm:ss)"
+  buildTime="${minsOut}:${secs} (mm:ss)"
 else
   buildTime="${secs} seconds"
 fi
