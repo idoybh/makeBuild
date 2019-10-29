@@ -5,8 +5,20 @@ isUpload=0
 isPush=0
 isClean=0
 isSilent=0
-while getopts ":upcs" opt; do
+while getopts ":hiupcs" opt; do
   case $opt in
+    h )
+    echo 'Arguments available:'
+    echo '-h to show this dialog'
+    echo '-i for setup'
+    echo '-u for upload'
+    echo '-p for ADB push'
+    echo '-c for a clean build'
+    echo '-s to disbale telegram-send bot'
+    exit 0
+    ;;
+    i )
+    ;;
     u )
     echo 'User build!'
     isUpload=1
