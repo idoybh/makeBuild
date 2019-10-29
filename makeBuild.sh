@@ -7,7 +7,7 @@ YELLOW="\033[1;33m" # For input requests
 BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
-source build.conf || (echo "Error! no build.config file" && exit 2) # read configs
+source build.conf || (echo -e "${RED}Error! no ${BLUE}build.config${RED} file${NC}" && exit 2) # read configs
 
 # handle arguments
 isUpload=0
@@ -18,78 +18,80 @@ while getopts ":hiupcs" opt; do
   case $opt in
     h ) # help
     echo -e "${GREEN}Arguments available:${NC}"
-    echo '-h to show this dialog'
-    echo '-i for setup'
-    echo '-u for upload'
-    echo '-p for ADB push'
-    echo '-c for a clean build'
-    echo '-s to disbale telegram-send bot'
+    echo -e "${BLUE}-h${NC} to show this dialog and exit"
+    echo -e "${BLUE}-i${NC} for setup"
+    echo -e "${BLUE}-u${NC} for upload"
+    echo -e "${BLUE}-p${NC} for ADB push"
+    echo -e "${BLUE}-c${NC} for a clean build"
+    echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
+    echo -e "${GREEN}Configuration file: ${BLUE}build.conf${NC}"
+    echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
     exit 0
     ;;
     i ) # initialize (write a new build.conf)
     echo -e "${GREEN}Initializing settings${NC}"
     echo -e "${GREEN}Default values are inside [] just press enter to apply them${NC}"
-    echo -en "${YELLOW}Enter clean command [make clobber]: ${NC}"
+    echo -en "${YELLOW}Enter clean command [${BLUE}make clobber${YELLOW}]: ${NC}"
     read CLEAN_CMD
     if [[ $CLEAN_CMD = '' ]]; then
       CLEAN_CMD='make clobber'
     fi
-    echo -en "${YELLOW}Enter target choose command [lunch aosip_dumpling-userdebug]: ${NC}"
+    echo -en "${YELLOW}Enter target choose command [${BLUE}lunch aosip_dumpling-userdebug${YELLOW}]: ${NC}"
     read TARGET_CHOOSE_CMD
     if [[ $TARGET_CHOOSE_CMD = '' ]]; then
       TARGET_CHOOSE_CMD='lunch aosip_dumpling-userdebug'
     fi
-    echo -en "${YELLOW}Enter build command [mka kronic]: ${NC}"
+    echo -en "${YELLOW}Enter build command [${BLUE}mka kronic${YELLOW}]: ${NC}"
     read BUILD_CMD
     if [[ $BUILD_CMD = '' ]]; then
       BUILD_CMD='mka kronic'
     fi
-    echo -en "${YELLOW}Enter file manager command ('c' for none) [dolphin]: ${NC}"
+    echo -en "${YELLOW}Enter file manager command ('c' for none) [${BLUE}dolphin${YELLOW}]: ${NC}"
     read FILE_MANAGER_CMD
     if [[ $FILE_MANAGER_CMD = '' ]]; then
       FILE_MANAGER_CMD='dolphin'
     fi
-    echo -en "${YELLOW}Enter upload command [rclone copy -v]: ${NC}"
+    echo -en "${YELLOW}Enter upload command [${BLUE}rclone copy -v${YELLOW}]: ${NC}"
     read UPLOAD_CMD
     if [[ $UPLOAD_CMD = '' ]]; then
       UPLOAD_CMD='rclone copy -v'
     fi
-    echo -en "${YELLOW}Enter upload destination [GDrive:/builds]: ${NC}"
+    echo -en "${YELLOW}Enter upload destination [${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
     read UPLOAD_DEST
     if [[ $UPLOAD_DEST = '' ]]; then
       UPLOAD_DEST='GDrive:/builds'
     fi
-    echo -en "${YELLOW}Enter upload folder path (local - 'c' for none) [gdrive:/idoybh2@gmail.com/builds/]: ${NC}"
+    echo -en "${YELLOW}Enter upload folder path (local - 'c' for none) [${BLUE}gdrive:/idoybh2@gmail.com/builds/${YELLOW}]: ${NC}"
     read UPLOAD_PATH
     if [[ $UPLOAD_PATH = '' ]]; then
       UPLOAD_PATH='gdrive:/idoybh2@gmail.com/builds/'
     fi
-    echo -en "${YELLOW}Enter source path [.]: ${NC}"
+    echo -en "${YELLOW}Enter source path [${BLUE}.${YELLOW}]: ${NC}"
     read SOURCE_PATH
     if [[ $SOURCE_PATH = '' ]]; then
       SOURCE_PATH='.'
     fi
-    echo -en "${YELLOW}Enter build product name [dumpling]: ${NC}"
+    echo -en "${YELLOW}Enter build product name [${BLUE}dumpling${YELLOW}]: ${NC}"
     read BUILD_PRODUCT_NAME
     if [[ $BUILD_PRODUCT_NAME = '' ]]; then
       BUILD_PRODUCT_NAME='dumpling'
     fi
-    echo -en "${YELLOW}Enter built zip file name [AOSiP*.zip]: ${NC}"
+    echo -en "${YELLOW}Enter built zip file name [${BLUE}AOSiP*.zip${YELLOW}]: ${NC}"
     read BUILD_FILE_NAME
     if [[ $BUILD_FILE_NAME = '' ]]; then
       BUILD_FILE_NAME='AOSiP*.zip'
     fi
-    echo -en "${YELLOW}Enter ADB push destination folder [Flash/Derp]: ${NC}"
+    echo -en "${YELLOW}Enter ADB push destination folder [${BLUE}Flash/Derp${YELLOW}]: ${NC}"
     read ADB_DEST_FOLDER
     if [[ $ADB_DEST_FOLDER = '' ]]; then
       ADB_DEST_FOLDER='Flash/Derp'
     fi
-    echo -en "${YELLOW}Enter default move path ('c' for none) [~/Desktop]: ${NC}"
+    echo -en "${YELLOW}Enter default move path ('c' for none) [${BLUE}~/Desktop${YELLOW}]: ${NC}"
     read UNHANDLED_PATH
     if [[ $UNHANDLED_PATH = '' ]]; then
       UNHANDLED_PATH='~/Desktop'
     fi
-    echo -e "${RED}Note! if you chose 'n' settings will only persist for current session${NC}"
+    echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
     read isWriteConf
     if [[ $isWriteConf != 'n' ]]; then
@@ -113,18 +115,24 @@ while getopts ":hiupcs" opt; do
       echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
       echo "" >> build.conf
     fi
+    echo -en "${YELLOW}Continue script? [y]/n: ${NC}" isExit
+    if [[ isExit != 'n' ]]; then
+      exit 0
+    fi
     ;;
     u ) # upload / user build
     echo -e "${GREEN}User build!${NC}"
     isUpload=1
     ;;
     p ) # push
+    echo -e "${GREEN}Push build!${NC}"
     isPush=1
     ;;
     c ) # clean
     isClean=1
     ;;
     s ) # silent
+    echo -e "${GREEN}Silent build!${NC}"
     isSilent=1
     ;;
   esac
@@ -221,6 +229,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
     if [[ $? == 0 ]]; then
+      echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
         telegram-send "Upload done"
       fi
@@ -263,6 +272,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $isRM != 'n' ]]; then
       eval "rm ${PATH_TO_BUILD_FILE}"
       eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
+      echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
       exit 0
     fi
   fi
