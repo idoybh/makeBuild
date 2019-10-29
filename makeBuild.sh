@@ -150,7 +150,7 @@ elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] &&
   exit 2
 fi
 
-echo -e "${GREEN}Script dir:${BLUE} ${PWM}${NC}"
+echo -e "${GREEN}Script dir:${BLUE} ${PWD}${NC}"
 echo -e "${GREEN}Source dir:${BLUE} ${SOURCE_PATH}${NC}"
 echo -e "${GREEN}Product name:${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
 echo -e "${GREEN}Upload destination:${BLUE} ${UPLOAD_DEST}${NC}"
