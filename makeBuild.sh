@@ -69,6 +69,7 @@ else
 fi
 
 # handle build file
+buildH=0 # build handled?
 if [[ $buildRes = '0' ]]; then # if build succeeded
   if [[ $isSilent == 0 ]]; then
     telegram-send "Build done in ${buildTime}"
@@ -78,31 +79,44 @@ if [[ $buildRes = '0' ]]; then # if build succeeded
       telegram-send "Uploading build"
     fi
     echo "Uploading..."
-    rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip 'GDrive:/builds'
-    rclone move -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum 'GDrive:/builds'
+    rclone copy -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip 'GDrive:/builds'
+    rclone copy -v ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum 'GDrive:/builds'
     if [ $? = '0' ]; then
       if [[ $isSilent == 0 ]]; then
         telegram-send "Upload done"
       fi
-      dolphin 'gdrive:/idoybh2/builds/' &> /dev/null &
+      dolphin 'gdrive:/idoybh2@gmail.com/builds/' &> /dev/null &
       disown
-      exit 0
+      buildH=1
     fi
-  elif [[ $isPush == 1 ]]; then
-    read -p "Recovery push? y/[n] > " isRec
+  fi
+  if [[ $isPush == 1 ]]; then
     echo "Pushing..."
-    adb kill-server
-    adb start-server
-    if [[ $isRec = 'y' ]]; then
-      adb push ~/Android/derp/out/target/product/dumpling/AOSiP*.zip /sdcard/Flash/Derp/
-    else
-      adb push ~/Android/derp/out/target/product/dumpling/AOSiP*.zip /storage/emulated/0/Flash/Derp/
-    fi
-    if [[ $? = '0' ]]; then
-      rm ~/Android/derp/out/target/product/dumpling/AOSiP*.zip
-      rm ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum
-      exit 0
-    fi
+    isOn='1'
+    isRec='1'
+    while [ $isOn != '0'] && [ $isRec != '0' ]; do
+      adb kill-server
+      adb start-server
+      adb devices | grep 'device' &> /dev/null
+      isOn=$?
+      adb devices | grep 'recovery' &> /dev/null
+      isRec=$?
+      if [ $isRec = '0' ]; then
+        adb push ~/Android/derp/out/target/product/dumpling/AOSiP*.zip /sdcard/Flash/Derp/
+        buildH=1
+      elif [ $isOn = '0' ]; then
+        adb push ~/Android/derp/out/target/product/dumpling/AOSiP*.zip /storage/emulated/0/Flash/Derp/
+        buildH=1
+      else
+        echo "Please plug in a device with ADB on and try again"
+        echo
+      fi
+    done
+  fi
+  if [[ $buildH == 1 ]]; then
+    rm ~/Android/derp/out/target/product/dumpling/AOSiP*.zip
+    rm ~/Android/derp/out/target/product/dumpling/AOSiP*.zip.md5sum
+    exit 0
   fi
   # Should only reach here if not handled yet
   mv ~/Android/derp/out/target/product/dumpling/AOSiP*.zip ~/Desktop/
