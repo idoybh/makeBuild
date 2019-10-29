@@ -158,6 +158,12 @@ elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] &&
   exit 2
 fi
 
+if [[ $WAS_INIT == 0 ]]; then # show not configured warning
+  echo -e "${RED}WARNING! Script configs were never initialized!${NC}"
+  echo -e "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} in ${BLUE}build.config${GREEN} to hide this warning${NC}"
+  echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
+  sleep 3
+fi
 echo -e "${GREEN}Script dir:${BLUE} ${PWD}${NC}"
 echo -e "${GREEN}Source dir:${BLUE} ${SOURCE_PATH}${NC}"
 echo -e "${GREEN}Product name:${BLUE} ${BUILD_PRODUCT_NAME}${NC}"

@@ -16,7 +16,7 @@ You can start the script with the following flags:
 ## build.conf
 ##### WAS_INIT
 Just a flag to show weather the **-i** flag was used before.
-Might be used to show a warning in the future.
+Set this to any other value than 0 to dismiss the warning.
 Set to `'0'` by default
 ##### CLEAN_CMD
 Set this to whatever command you use to make a clean build.
@@ -63,7 +63,7 @@ Please note the script automatically detects if you're booted / in recovery.
 **Please do not start this path with an '/'**. Set to `'Flash/Derp'` by default.
 ##### UNHANDLED_PATH
 Set this to the **local** path you want the script to move the built file to if no handling flags selected.
-You can either use a relative or an absolute path. Same notes of *SOURCE_PATH* apply here. 
+You can either use a relative or an absolute path. Same notes of *SOURCE_PATH* apply here.
 You can also set this to `'c'` to disable this function.
 
 ## Output color coding
