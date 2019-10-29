@@ -1,4 +1,5 @@
 #!/bin/bash
+# Script was made by Ido Ben-Hur (@idoybh) due to pure bordom and to save time building diff roms
 
 # Colors
 RED="\033[1;31m" # For errors / warnings
