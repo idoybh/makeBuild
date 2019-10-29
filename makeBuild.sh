@@ -1,5 +1,14 @@
 #!/bin/bash
+
+# Colors
+RED="\033[1;31m" # For errors / warnings
+GREEN="\033[1;32m" # For info
+YELLOW="\033[1;33m" # For input requests
+BLUE="\033[1;36m" # For info
+NC="\033[0m" # reset color
+
 source build.conf || (echo "Error! no build.config file" && exit 2) # read configs
+
 # handle arguments
 isUpload=0
 isPush=0
@@ -8,7 +17,7 @@ isSilent=0
 while getopts ":hiupcs" opt; do
   case $opt in
     h ) # help
-    echo 'Arguments available:'
+    echo -e "${GREEN}Arguments available:${NC}"
     echo '-h to show this dialog'
     echo '-i for setup'
     echo '-u for upload'
@@ -18,60 +27,73 @@ while getopts ":hiupcs" opt; do
     exit 0
     ;;
     i ) # initialize (write a new build.conf)
-    echo 'Initializing settings'
-    echo 'Default values are inside [] just press enter to apply them'
-    read -p "Enter clean command [make clobber]: " CLEAN_CMD
+    echo -e "${GREEN}Initializing settings${NC}"
+    echo -e "${GREEN}Default values are inside [] just press enter to apply them${NC}"
+    echo -en "${YELLOW}Enter clean command [make clobber]: ${NC}"
+    read CLEAN_CMD
     if [[ $CLEAN_CMD = '' ]]; then
       CLEAN_CMD='make clobber'
     fi
-    read -p "Enter target choose command [lunch aosip_dumpling-userdebug]: " TARGET_CHOOSE_CMD
+    echo -en "${YELLOW}Enter target choose command [lunch aosip_dumpling-userdebug]: ${NC}"
+    read TARGET_CHOOSE_CMD
     if [[ $TARGET_CHOOSE_CMD = '' ]]; then
       TARGET_CHOOSE_CMD='lunch aosip_dumpling-userdebug'
     fi
-    read -p "Enter build command [mka kronic]: " BUILD_CMD
+    echo -en "${YELLOW}Enter build command [mka kronic]: ${NC}"
+    read BUILD_CMD
     if [[ $BUILD_CMD = '' ]]; then
       BUILD_CMD='mka kronic'
     fi
-    read -p "Enter file manager command ('c' for none) [dolphin]: " FILE_MANAGER_CMD
+    echo -en "${YELLOW}Enter file manager command ('c' for none) [dolphin]: ${NC}"
+    read FILE_MANAGER_CMD
     if [[ $FILE_MANAGER_CMD = '' ]]; then
       FILE_MANAGER_CMD='dolphin'
     fi
-    read -p "Enter upload command [rclone copy -v]: " UPLOAD_CMD
+    echo -en "${YELLOW}Enter upload command [rclone copy -v]: ${NC}"
+    read UPLOAD_CMD
     if [[ $UPLOAD_CMD = '' ]]; then
       UPLOAD_CMD='rclone copy -v'
     fi
-    read -p "Enter upload destination [GDrive:/builds]: " UPLOAD_DEST
+    echo -en "${YELLOW}Enter upload destination [GDrive:/builds]: ${NC}"
+    read UPLOAD_DEST
     if [[ $UPLOAD_DEST = '' ]]; then
       UPLOAD_DEST='GDrive:/builds'
     fi
-    read -p "Enter upload folder path (local - 'c' for none) [gdrive:/idoybh2@gmail.com/builds/]: " UPLOAD_PATH
+    echo -en "${YELLOW}Enter upload folder path (local - 'c' for none) [gdrive:/idoybh2@gmail.com/builds/]: ${NC}"
+    read UPLOAD_PATH
     if [[ $UPLOAD_PATH = '' ]]; then
       UPLOAD_PATH='gdrive:/idoybh2@gmail.com/builds/'
     fi
-    read -p "Enter source path [.]: " SOURCE_PATH
+    echo -en "${YELLOW}Enter source path [.]: ${NC}"
+    read SOURCE_PATH
     if [[ $SOURCE_PATH = '' ]]; then
       SOURCE_PATH='.'
     fi
-    read -p "Enter build product name [dumpling]: " BUILD_PRODUCT_NAME
+    echo -en "${YELLOW}Enter build product name [dumpling]: ${NC}"
+    read BUILD_PRODUCT_NAME
     if [[ $BUILD_PRODUCT_NAME = '' ]]; then
       BUILD_PRODUCT_NAME='dumpling'
     fi
-    read -p "Enter built zip file name [AOSiP*.zip]: " BUILD_FILE_NAME
+    echo -en "${YELLOW}Enter built zip file name [AOSiP*.zip]: ${NC}"
+    read BUILD_FILE_NAME
     if [[ $BUILD_FILE_NAME = '' ]]; then
       BUILD_FILE_NAME='AOSiP*.zip'
     fi
-    read -p "Enter ADB push destination folder [Flash/Derp]: " ADB_DEST_FOLDER
+    echo -en "${YELLOW}Enter ADB push destination folder [Flash/Derp]: ${NC}"
+    read ADB_DEST_FOLDER
     if [[ $ADB_DEST_FOLDER = '' ]]; then
       ADB_DEST_FOLDER='Flash/Derp'
     fi
-    read -p "Enter default move path ('c' for none) [~/Desktop]: " UNHANDLED_PATH
+    echo -en "${YELLOW}Enter default move path ('c' for none) [~/Desktop]: ${NC}"
+    read UNHANDLED_PATH
     if [[ $UNHANDLED_PATH = '' ]]; then
       UNHANDLED_PATH='~/Desktop'
     fi
-    echo "Note! if you chose no settings will only persist for current session"
-    read -p "Write current config to file? [y]/n: " isWriteConf
+    echo -e "${RED}Note! if you chose 'n' settings will only persist for current session${NC}"
+    echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
+    read isWriteConf
     if [[ $isWriteConf != 'n' ]]; then
-      echo "Rewriting file"
+      echo -e "${GREEN}Rewriting file${NC}"
       rm build.conf
       touch build.conf
       echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > build.conf
@@ -93,7 +115,7 @@ while getopts ":hiupcs" opt; do
     fi
     ;;
     u ) # upload / user build
-    echo 'User build!'
+    echo -e "${GREEN}User build!${NC}"
     isUpload=1
     ;;
     p ) # push
@@ -115,7 +137,7 @@ elif [[ ${SOURCE_PATH:0:1} = '.' ]]; then
   SOURCE_PATH=${SOURCE_PATH#"."}
   SOURCE_PATH="${PWD}/${SOURCE_PATH}"
 elif [[ ${SOURCE_PATH:0:1} != '/' ]] && [[ ${SOURCE_PATH:0:1} != '~' ]]; then
-  echo "ERROR! Invalid source path in config. Must start with '.' or '/' or '~'"
+  echo -e "${RED}ERROR! Invalid source path in config. Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}'${NC}"
   exit 2
 fi
 if [[ $UNHANDLED_PATH = '.' ]]; then # converting UNHANDLED_PATH
@@ -124,19 +146,26 @@ elif [[ ${UNHANDLED_PATH:0:1} = '.' ]]; then
   UNHANDLED_PATH=${UNHANDLED_PATH#"."}
   UNHANDLED_PATH="${PWD}/${UNHANDLED_PATH}"
 elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] && [[ $UNHANDLED_PATH != 'c' ]]; then
-  echo "ERROR! Invalid default path in config. Must start with '.' or '/' or '~' or be exactly 'c'"
+  echo -e "${RED}ERROR! Invalid source path in config. Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}' or be exactly '${NC}c${RED}'${NC}"
   exit 2
 fi
 
-echo "Script dir: ${PWM}"
-echo "Source dir: ${SOURCE_PATH}"
+echo -e "${GREEN}Script dir:${BLUE} ${PWM}${NC}"
+echo -e "${GREEN}Source dir:${BLUE} ${SOURCE_PATH}${NC}"
+echo -e "${GREEN}Product name:${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
+echo -e "${GREEN}Upload destination:${BLUE} ${UPLOAD_DEST}${NC}"
+echo -e "${GREEN}ADB push destination:${BLUE} ${ADB_DEST_FOLDER}${NC}"
+if [[ $UNHANDLED_PATH != 'c' ]]; then
+  echo -e "${GREEN}Move build destination:${BLUE} ${UNHANDLED_PATH}${NC}"
+fi
+
 cd $SOURCE_PATH # changing dir to source path
 PATH_TO_BUILD_FILE="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/${BUILD_FILE_NAME}"
 
 # build
 source "${SOURCE_PATH}/build/envsetup.sh"
 if [[ $isClean == 1 ]]; then
-  echo 'Cleanning build'
+  echo -e "${GREEN}Cleanning build${NC}"
   eval $CLEAN_CMD
 fi
 eval $TARGET_CHOOSE_CMD # target
@@ -188,7 +217,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $isSilent == 0 ]]; then
       telegram-send "Uploading build"
     fi
-    echo "Uploading..."
+    echo -e "${GREEN}Uploading...${NC}"
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
     if [[ $? == 0 ]]; then
@@ -203,7 +232,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
   fi
   if [[ $isPush == 1 ]]; then
-    echo "Pushing..."
+    echo -e "${GREEN}Pushing...${NC}"
     isOn='1'
     isRec='1'
     while [[ $isOn != '0' ]] && [[ $isRec != '0' ]]; do
@@ -215,19 +244,22 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       isRec=$?
       if [[ $isRec == 0 ]]; then
         eval "adb push ${PATH_TO_BUILD_FILE} /sdcard/${ADB_DEST_FOLDER}/"
+        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
         buildH=1
       elif [[ $isOn == 0 ]]; then
-        echo $CD
         eval "adb push ${PATH_TO_BUILD_FILE} /storage/emulated/0/${ADB_DEST_FOLDER}/"
+        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
         buildH=1
       else
-        read -n1 -p "Please plug in a device with ADB enabled and press any key"
+        echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
+        read -n1 temp
         echo
       fi
     done
   fi
   if [[ $buildH == 1 ]]; then
-    read -p "Remove original build file? [y]/n: " isRM
+    echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
+    read isRM
     if [[ $isRM != 'n' ]]; then
       eval "rm ${PATH_TO_BUILD_FILE}"
       eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
@@ -249,4 +281,4 @@ fi
 if [[ $isSilent == 0 ]]; then
   telegram-send "Build failed after ${buildTime}"
 fi
-#exit $?
+exit $?
