@@ -116,7 +116,8 @@ while getopts ":hiupcs" opt; do
       echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
       echo "" >> build.conf
     fi
-    echo -en "${YELLOW}Continue script? [y]/n: ${NC}" isExit
+    echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
+    read isExit
     if [[ isExit != 'n' ]]; then
       exit 0
     fi
