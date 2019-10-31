@@ -57,12 +57,17 @@ while getopts ":hiupcs" opt; do
     if [[ $UPLOAD_CMD = '' ]]; then
       UPLOAD_CMD='rclone copy -v'
     fi
-    echo -en "${YELLOW}Enter upload destination [${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter upload command [${BLUE}c${YELLOW}]: ${NC}"
+    read TG_SEND_PRIOR_CMD
+    if [[ $TG_SEND_PRIOR_CMD = '' ]]; then
+      TG_SEND_PRIOR_CMD='c'
+    fi
+    echo -en "${YELLOW}Enter upload destination (remote) [${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
     read UPLOAD_DEST
     if [[ $UPLOAD_DEST = '' ]]; then
       UPLOAD_DEST='GDrive:/builds'
     fi
-    echo -en "${YELLOW}Enter upload folder path (local - 'c' for none) [${BLUE}gdrive:/idoybh2@gmail.com/builds/${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) [${BLUE}gdrive:/idoybh2@gmail.com/builds/${YELLOW}]: ${NC}"
     read UPLOAD_PATH
     if [[ $UPLOAD_PATH = '' ]]; then
       UPLOAD_PATH='gdrive:/idoybh2@gmail.com/builds/'
@@ -107,6 +112,7 @@ while getopts ":hiupcs" opt; do
       echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> build.conf
       echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> build.conf
       echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> build.conf
+      echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> build.conf
       echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> build.conf
       echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> build.conf
       echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> build.conf
@@ -186,6 +192,9 @@ if [[ $isClean == 1 ]]; then
 fi
 eval $TARGET_CHOOSE_CMD # target
 if [[ $isSilent == 0 ]]; then
+  if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+    eval $TG_SEND_PRIOR_CMD
+  fi
   telegram-send "Build started"
 fi
 start_time=$(date +"%s")
@@ -197,6 +206,7 @@ buildRes=$? # save result (exit code)
 end_time=$(date +"%s")
 tdiff=$(($end_time-$start_time)) # time diff
 
+# Formatting total build time
 hours=$(($tdiff / 3600 ))
 hoursOut=$hours
 if [[ ${#hours} -lt 2 ]]; then
@@ -214,7 +224,7 @@ if [[ ${#secs} -lt 2 ]]; then
   secs="0${secs}"
 fi
 
-buildTime="" # will store the time to output
+buildTime="" # will store the formatted time to output
 if [[ $hours -gt 0 ]]; then
   buildTime="${hoursOut}:${minsOut}:${secs} (hh:mm:ss)"
 elif [[ $mins -gt 0 ]]; then
@@ -227,10 +237,16 @@ fi
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $isSilent == 0 ]]; then
+    if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+      eval $TG_SEND_PRIOR_CMD
+    fi
     telegram-send "Build done in ${buildTime}"
   fi
   if [[ $isUpload == 1 ]]; then
     if [[ $isSilent == 0 ]]; then
+      if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+        eval $TG_SEND_PRIOR_CMD
+      fi
       telegram-send "Uploading build"
     fi
     echo -e "${GREEN}Uploading...${NC}"
@@ -239,6 +255,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $? == 0 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
+        if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+          eval $TG_SEND_PRIOR_CMD
+        fi
         telegram-send "Upload done"
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
@@ -297,6 +316,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
 fi
 # If build fails:
 if [[ $isSilent == 0 ]]; then
+  if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+    eval $TG_SEND_PRIOR_CMD
+  fi
   telegram-send "Build failed after ${buildTime}"
 fi
 exit $?
