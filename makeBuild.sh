@@ -195,7 +195,7 @@ if [[ $isSilent == 0 ]]; then
   if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
     eval $TG_SEND_PRIOR_CMD
   fi
-  telegram-send "Build started"
+  telegram-send --format html "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
 fi
 start_time=$(date +"%s")
 
@@ -240,7 +240,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
-    telegram-send "Build done in ${buildTime}"
+    telegram-send --format html "Build done in <code>${buildTime}</code>"
   fi
   if [[ $isUpload == 1 ]]; then
     if [[ $isSilent == 0 ]]; then
@@ -319,6 +319,6 @@ if [[ $isSilent == 0 ]]; then
   if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
     eval $TG_SEND_PRIOR_CMD
   fi
-  telegram-send "Build failed after ${buildTime}"
+  telegram-send --format html "Build failed after <code>${buildTime}</code>"
 fi
 exit $?
