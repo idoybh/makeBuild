@@ -269,9 +269,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
-    isOn='1'
-    isRec='1'
-    while [[ $isOn != '0' ]] && [[ $isRec != '0' ]]; do
+    isOn='1' # Device is booted (reverse logic)
+    isRec='1' # Device is on recovery mode (reverse logic)
+    isPushed='1' # Weater the push went fine (reverse logic)
+    while [[ $isOn != '0' ]] && [[ $isRec != '0' ]] && [[ $isPushed != '0' ]]; do
+      echo -e "${GREEN}Restarting ADB server${NC}"
       adb kill-server
       adb start-server
       adb devices | grep -w 'device' &> /dev/null
@@ -279,13 +281,29 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       adb devices | grep -w 'recovery' &> /dev/null
       isRec=$?
       if [[ $isRec == 0 ]]; then
+        echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
         eval "adb push ${PATH_TO_BUILD_FILE} /sdcard/${ADB_DEST_FOLDER}/"
-        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-        buildH=1
+        isPushed=$?
+        if [[ $isPushed == '0' ]]; then
+          echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
+          buildH=1
+        else
+          echo -en "${RED}Push error (see output). Press any key to try again${NC}"
+          read -n1 temp
+          echo
+        fi
       elif [[ $isOn == 0 ]]; then
+        echo -e "${GREEN}Device detected${NC}"
         eval "adb push ${PATH_TO_BUILD_FILE} /storage/emulated/0/${ADB_DEST_FOLDER}/"
-        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-        buildH=1
+        isPushed=$?
+        if [[ $isPushed == '0' ]]; then
+          echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
+          buildH=1
+        else
+          echo -en "${RED}Push error (see output). Press any key to try again${NC}"
+          read -n1 temp
+          echo
+        fi
       else
         echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
         read -n1 temp
