@@ -15,7 +15,8 @@ isUpload=0
 isPush=0
 isClean=0
 isSilent=0
-while getopts ":hiupcs" opt; do
+isDry=0
+while getopts ":hiupcsd" opt; do
   case $opt in
     h ) # help
     echo -e "${GREEN}Arguments available:${NC}"
@@ -143,6 +144,10 @@ while getopts ":hiupcs" opt; do
     echo -e "${GREEN}Silent build!${NC}"
     isSilent=1
     ;;
+    d ) # dry
+    echo -e "${GREEN}Dry run!${NC}"
+    isDry=1
+    ;;
   esac
 done
 
@@ -199,9 +204,13 @@ if [[ $isSilent == 0 ]]; then
 fi
 start_time=$(date +"%s")
 
-eval $BUILD_CMD # build
-# no commands allowed in here!
-buildRes=$? # save result (exit code)
+if [[ $isDry == 0 ]]; then
+  eval $BUILD_CMD # build
+  # no commands allowed in here!
+  buildRes=$? # save result (exit code)
+else
+  buildRes=0
+fi
 
 end_time=$(date +"%s")
 tdiff=$(($end_time-$start_time)) # time diff
@@ -327,7 +336,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
         adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
         # Add additional flash operations here (magisk provided as example)
-        adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1(20100).zip"
+        adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
         echo -en "${YELLOW}Press any key to reboot${NC}"
         read -n1 temp
         adb shell twrp reboot
