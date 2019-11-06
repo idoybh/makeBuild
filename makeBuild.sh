@@ -324,12 +324,22 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       read isFlash
       if [[ $isFlash == 'y' ]]; then
         if [[ $isOn == 0 ]]; then
-          echo -e "${GREEN}Rebooting recovery${NC}"
+          echo -e "${GREEN}Rebooting to recovery${NC}"
           adb reboot recovery
           echo -e "${GREEN}Waiting for device${NC}"
-          adb wait-for-device
+          while [[ $isRec != '0' ]]; do # wait for recovery device
+            adb kill-server &> /dev/null
+            adb start-server &> /dev/null
+            adb devices | grep -w 'recovery' &> /dev/null
+            isRec=$?
+            sleep 3
+          done
+          echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
           echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
           read -n1 temp
+          echo -e "${GREEN}Restarting ADB server${NC}"
+          adb kill-server
+          adb start-server
         fi
         # Add extra pre-flash operations here
         fileName=`basename $PATH_TO_BUILD_FILE`
