@@ -284,7 +284,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
         eval "adb push ${PATH_TO_BUILD_FILE} /sdcard/${ADB_DEST_FOLDER}/"
         isPushed=$?
-        if [[ $isPushed == '0' ]]; then
+        if [[ $isPushed == 0 ]]; then
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
@@ -296,7 +296,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         echo -e "${GREEN}Device detected${NC}"
         eval "adb push ${PATH_TO_BUILD_FILE} /storage/emulated/0/${ADB_DEST_FOLDER}/"
         isPushed=$?
-        if [[ $isPushed == '0' ]]; then
+        if [[ $isPushed == 0 ]]; then
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
@@ -310,6 +310,29 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         echo
       fi
     done
+    if [[ $isPushed == 0 ]]; then
+      echo -en "${YELLOW}Flash now? y/[n]: ${NC}"
+      read isFlash
+      if [[ $isFlash == 'y' ]]; then
+        if [[ $isOn == 0 ]]; then
+          echo -e "${GREEN}Rebooting recovery${NC}"
+          adb reboot recovery
+          echo -e "${GREEN}Waiting for device${NC}"
+          adb wait-for-device
+          echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
+          read -n1 temp
+        fi
+        # Add extra pre-flash operations here
+        fileName=`basename $PATH_TO_BUILD_FILE`
+        echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
+        adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
+        # Add additional flash operations here (magisk provided as example)
+        adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1(20100).zip"
+        echo -en "${YELLOW}Press any key to reboot${NC}"
+        read -n1 temp
+        adb shell twrp reboot
+      fi
+    fi
   fi
   if [[ $buildH == 1 ]]; then
     echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
