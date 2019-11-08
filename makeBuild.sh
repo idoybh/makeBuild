@@ -187,7 +187,6 @@ if [[ $UNHANDLED_PATH != 'c' ]]; then
 fi
 
 cd $SOURCE_PATH # changing dir to source path
-PATH_TO_BUILD_FILE="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/${BUILD_FILE_NAME}"
 
 # build
 source "${SOURCE_PATH}/build/envsetup.sh"
@@ -245,6 +244,8 @@ fi
 # handle built file
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
+  PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -name "${BUILD_FILE_NAME}"`
+  echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
   if [[ $isSilent == 0 ]]; then
     if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
       eval $TG_SEND_PRIOR_CMD
@@ -342,7 +343,6 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           adb start-server
         fi
         # Add extra pre-flash operations here
-        fileName=`basename $PATH_TO_BUILD_FILE`
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
         adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
         # Add additional flash operations here (magisk provided as example)
