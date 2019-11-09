@@ -1,5 +1,6 @@
 #!/bin/bash
 # Script was made by Ido Ben-Hur (@idoybh) due to pure bordom and to save time building diff roms
+cd "$(dirname "$0")"
 
 # Colors
 RED="\033[1;31m" # For errors / warnings
