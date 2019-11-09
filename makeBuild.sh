@@ -381,6 +381,7 @@ if [[ $isSilent == 0 ]]; then
   if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
     eval $TG_SEND_PRIOR_CMD
   fi
-  telegram-send --format html "Build failed after <code>${buildTime}</code>"
+  telegram-send --format html "Build failed after <code>${buildTime}</code>. Sending log"
+  telegram-send --file "${SOURCE_PATH}/out/error.log"
 fi
 exit $?
