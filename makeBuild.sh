@@ -344,6 +344,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           adb start-server
         fi
         # Add extra pre-flash operations here
+        fileName=`basename $PATH_TO_BUILD_FILE`
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
         adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
         # Add additional flash operations here (magisk provided as example)
