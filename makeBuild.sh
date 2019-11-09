@@ -99,6 +99,13 @@ while getopts ":hiupcsd" opt; do
     if [[ $UNHANDLED_PATH = '' ]]; then
       UNHANDLED_PATH='~/Desktop'
     fi
+    echo -en "${YELLOW}Automatically remove build file? y/[${BLUE}n${YELLOW}]: ${NC}"
+    read AUTO_RM_BUILD
+    if [[ $AUTO_RM_BUILD = 'y' ]]; then
+      AUTO_RM_BUILD=1
+    else
+      AUTO_RM_BUILD=0
+    fi
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
     read isWriteConf
@@ -122,6 +129,7 @@ while getopts ":hiupcsd" opt; do
       echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> build.conf
       echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
       echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
+      echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
       echo "" >> build.conf
     fi
     echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
@@ -356,8 +364,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
   fi
   if [[ $buildH == 1 ]]; then
-    echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
-    read isRM
+    if [[ $AUTO_RM_BUILD != 1 ]]; then
+      echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
+      read isRM
+    else
+      isRM='y'
+    fi
     if [[ $isRM != 'n' ]]; then
       eval "rm ${PATH_TO_BUILD_FILE}"
       eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
