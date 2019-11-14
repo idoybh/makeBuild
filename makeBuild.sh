@@ -106,6 +106,13 @@ while getopts ":hiupcsd" opt; do
     else
       AUTO_RM_BUILD=0
     fi
+    echo -en "${YELLOW}Automatically reboot (to and from recovery)? y/[${BLUE}n${YELLOW}]: ${NC}"
+    read AUTO_REBOOT
+    if [[ $AUTO_REBOOT = 'y' ]]; then
+      AUTO_REBOOT=1
+    else
+      AUTO_REBOOT=0
+    fi
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
     read isWriteConf
@@ -130,6 +137,7 @@ while getopts ":hiupcsd" opt; do
       echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
       echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
       echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
+      echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery"
       echo "" >> build.conf
     fi
     echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
@@ -330,8 +338,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       fi
     done
     if [[ $isPushed == 0 ]]; then
-      echo -en "${YELLOW}Flash now? y/[n]: ${NC}"
-      read isFlash
+      if [[ $AUTO_REBOOT == 0 ]]; then
+        echo -en "${YELLOW}Flash now? y/[n]: ${NC}"
+        read isFlash
+      else
+        isFlash='y'
+      fi
       if [[ $isFlash == 'y' ]]; then
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
@@ -357,8 +369,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
         # Add additional flash operations here (magisk provided as example)
         adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
-        echo -en "${YELLOW}Press any key to reboot${NC}"
-        read -n1 temp
+        if [[ $AUTO_REBOOT == 0 ]]; then
+          echo -en "${YELLOW}Press any key to reboot${NC}"
+          read -n1 temp
+        fi
         adb shell twrp reboot
       fi
     fi
