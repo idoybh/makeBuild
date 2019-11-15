@@ -275,35 +275,6 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
     telegram-send --format html "Build done in <code>${buildTime}</code>"
   fi
-  if [[ $isUpload == 1 ]]; then
-    if [[ $isSilent == 0 ]]; then
-      if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-        eval $TG_SEND_PRIOR_CMD
-      fi
-      telegram-send "Uploading build"
-    fi
-    echo -e "${GREEN}Uploading...${NC}"
-    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
-    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
-    if [[ $? == 0 ]]; then
-      echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
-      if [[ $isSilent == 0 ]]; then
-        if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-          eval $TG_SEND_PRIOR_CMD
-        fi
-        fileName=`basename $PATH_TO_BUILD_FILE`
-        # Edit next line according to the way you fetch the link:
-        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
-        fileLink=`eval $cmd`
-        telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
-      fi
-      if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
-        eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
-        disown
-      fi
-      buildH=1
-    fi
-  fi
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
     isOn='1' # Device is booted (reverse logic)
@@ -388,6 +359,35 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         fi
         adb shell twrp reboot
       fi
+    fi
+  fi
+  if [[ $isUpload == 1 ]]; then
+    if [[ $isSilent == 0 ]]; then
+      if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+        eval $TG_SEND_PRIOR_CMD
+      fi
+      telegram-send "Uploading build"
+    fi
+    echo -e "${GREEN}Uploading...${NC}"
+    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
+    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
+    if [[ $? == 0 ]]; then
+      echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
+      if [[ $isSilent == 0 ]]; then
+        if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+          eval $TG_SEND_PRIOR_CMD
+        fi
+        fileName=`basename $PATH_TO_BUILD_FILE`
+        # Edit next line according to the way you fetch the link:
+        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
+        fileLink=`eval $cmd`
+        telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
+      fi
+      if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
+        eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
+        disown
+      fi
+      buildH=1
     fi
   fi
   if [[ $buildH == 1 ]]; then
