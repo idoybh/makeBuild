@@ -11,7 +11,8 @@ You can start the script with the following flags:
 * **-u** to upload the built file (stands for upload / user)
 * **-p** to push the built file through adb (stands for push)
 * **-c** to make a clean build (stands for clean - duh)
-* **-s** to disbale telegram-send (stands for silent)
+* **-s** to disable telegram-send (stands for silent)
+* **-d** to run without building (stands for dry)
 
 ## build.conf
 ##### WAS_INIT
@@ -35,6 +36,9 @@ Set to `'dolphin'` by default (KDE's default file manager)
 ##### UPLOAD_CMD
 Set this to whatever command you use to upload you file.
 Set to `'rclone copy -v'` by default.
+##### UPLOAD_LINK_CMD
+Set this to whatever command you use to get download links for uploaded files.
+Set to `'rclone link'` by default.
 ##### UPLOAD_DEST
 Set this to the upload destination **remote** folder.
 It will be added at the very end of the upload command, after the local built file path.
@@ -65,6 +69,13 @@ Please note the script automatically detects if you're booted / in recovery.
 Set this to the **local** path you want the script to move the built file to if no handling flags selected.
 You can either use a relative or an absolute path. Same notes of *SOURCE_PATH* apply here.
 You can also set this to `'c'` to disable this function.
+##### AUTO_RM_BUILD
+Set this to `1` to skip asking wether to remove original build file.
+Set to `0` by default.
+##### AUTO_REBOOT
+Set this to `1` to skip waiting for a keypress on each reboot.
+This will make the script automatically reboot from and to recovery.
+Set to `0` by default.
 
 ## Output color coding
 * *Red* for errors / warnings
