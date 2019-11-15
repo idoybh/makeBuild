@@ -59,6 +59,11 @@ while getopts ":hiupcsd" opt; do
     if [[ $UPLOAD_CMD = '' ]]; then
       UPLOAD_CMD='rclone copy -v'
     fi
+    echo -en "${YELLOW}Enter upload link command [${BLUE}rclone link${YELLOW}]: ${NC}"
+    read UPLOAD_LINK_CMD
+    if [[ $UPLOAD_LINK_CMD = '' ]]; then
+      UPLOAD_CMD='rclone link'
+    fi
     echo -en "${YELLOW}Enter upload command [${BLUE}c${YELLOW}]: ${NC}"
     read TG_SEND_PRIOR_CMD
     if [[ $TG_SEND_PRIOR_CMD = '' ]]; then
@@ -128,6 +133,7 @@ while getopts ":hiupcsd" opt; do
       echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> build.conf
       echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> build.conf
       echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> build.conf
+      echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> build.conf
       echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> build.conf
       echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> build.conf
       echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> build.conf
@@ -285,7 +291,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
           eval $TG_SEND_PRIOR_CMD
         fi
-        telegram-send "Upload done"
+        fileName=`basename $PATH_TO_BUILD_FILE`
+        # Edit next line according to the way you fetch the link:
+        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
+        fileLink=`eval $cmd`
+        telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
         eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
