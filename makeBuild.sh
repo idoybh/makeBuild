@@ -327,6 +327,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         else
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
+          isPushed='0'
           echo
         fi
       elif [[ $isOn == 0 ]]; then
@@ -369,6 +370,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
           echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
           read -n1 temp
+          echo
           echo -e "${GREEN}Restarting ADB server${NC}"
           adb kill-server
           adb start-server
@@ -382,6 +384,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         if [[ $AUTO_REBOOT == 0 ]]; then
           echo -en "${YELLOW}Press any key to reboot${NC}"
           read -n1 temp
+          echo
         fi
         adb shell twrp reboot
       fi
