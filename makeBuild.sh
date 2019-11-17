@@ -381,13 +381,21 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         # Edit next line according to the way you fetch the link:
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=`eval $cmd`
-        telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
+        if [[ $? == 0 ]]; then
+          echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
+          telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
+        else
+          echo -e "${RED}Getting link failed${NC}"
+        fi
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
         eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
         disown
       fi
       buildH=1
+    else
+      echo -e "${RED}Upload failed${NC}"
+      telegram-send "Upload failed"
     fi
   fi
   if [[ $buildH == 1 ]]; then
@@ -420,9 +428,12 @@ if [[ $isSilent == 0 ]]; then
   if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
     eval $TG_SEND_PRIOR_CMD
   fi
-  telegram-send --format html "Build failed after <code>${buildTime}</code>."
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
+    telegram-send --format html "Build failed after <code>${buildTime}</code>."
     telegram-send --file "${SOURCE_PATH}/out/error.log"
+  else
+    echo -e "${RED}Can't find error file. Assuming build got canceled"
+    telegram-send --format html "Build was canceled after <code>${buildTime}</code>."
   fi
 fi
 exit $?
