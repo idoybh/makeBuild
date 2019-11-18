@@ -13,6 +13,12 @@ You can start the script with the following flags:
 * **-c** to make a clean build (stands for clean - duh)
 * **-s** to disable telegram-send (stands for silent)
 * **-d** to run without building (stands for dry)
+* **--power _[ARG]_** to power off or reboot if build successful
+  * _[ARG]_ should be: `off` or `reboot`
+* **--choose _[CMD]_** to change target choose command (see [here](#####-TARGET_CHOOSE_CMD)) temporarily
+* **--product _[ARG]_** to change build product name (see [here](#####-BUILD_PRODUCT_NAME)) temporarily
+
+**Note** `--choose` and `--product` should be used together logically and will **not** affect build.conf
 
 ## build.conf
 ##### WAS_INIT
@@ -22,7 +28,7 @@ Set to `'0'` by default
 ##### CLEAN_CMD
 Set this to whatever command you use to make a clean build.
 Set to `'make clobber'` by default.
-##### TARGET_CHOOSE_CMD
+(#####-TARGET_CHOOSE_CMD)
 Set this to whatever command you use to "lunch" / select the product to build prior to the build command.
 Set to `'lunch aosip_dumpling-userdebug'` by default.
 ##### BUILD_CMD
@@ -55,7 +61,7 @@ The script will CD into this directory for the build process.
 Note that if the first char is `.` it will be replaced by the path of the script - thus allowing you to use a relative path.
 Generally I would recommend just clonning this repo to your root source folder and keep this as is.
 **Please do not use `..` as the first chars**. Set to `'.'` by default.
-##### BUILD_PRODUCT_NAME
+(#####-BUILD_PRODUCT_NAME)
 This should be set to the product name in `out/target/product/`. Usually is your device's codename.
 Set to `'dumpling'` by default.
 ##### BUILD_FILE_NAME
