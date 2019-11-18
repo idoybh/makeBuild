@@ -30,7 +30,9 @@ while [[ $# > 0 ]]; do
     echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
     echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
     echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
-    echo -e "${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
+    echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
+    echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
+    echo -e "${BLUE}--product [ARG]${NC} to change target product name"
     echo -e "${GREEN}Configuration file: ${BLUE}build.conf${NC}"
     echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
     shift
@@ -184,6 +186,7 @@ while [[ $# > 0 ]]; do
     ;;
     "--power") #power operations
     powerOpt=$2
+    echo
     if [[ $powerOpt == "off" ]]; then
       echo -e "${GREEN}Script will wait ${RED}1 minute${GREEN} and than perform a ${RED}power off${NC}"
       shift 2
@@ -194,6 +197,21 @@ while [[ $# > 0 ]]; do
       echo -e "${GREEN}ERROR! Power option not recognized.${NC}"
       exit 1
     fi
+    echo
+    ;;
+    "--choose") # diff lunch commands
+    echo
+    TARGET_CHOOSE_CMD=$2
+    echo -e "${GREEN}One-time target choose: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
+    shift 2
+    echo
+    ;;
+    "--product") # diff product fileName
+    echo
+    BUILD_PRODUCT_NAME=$2
+    echo -e "${GREEN}One-time poduct name: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
+    echo
+    shift 2
     ;;
     -*|--*=) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
@@ -201,6 +219,7 @@ while [[ $# > 0 ]]; do
     ;;
   esac
 done
+echo
 
 # Setting absolute paths, and checking configs
 if [[ $SOURCE_PATH = '.' ]]; then # converting SOURCE_PATH
