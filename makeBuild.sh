@@ -9,15 +9,17 @@ YELLOW="\033[1;33m" # For input requests
 BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
-source build.conf || (echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}" && exit 2) # read configs
+source build.conf || (echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}"; exit 2) # read configs
 
 # handle arguments
+configFile="build.conf"
 isUpload=0
 isPush=0
 isClean=0
 isSilent=0
 isDry=0
 powerOpt=0
+flagConflict=0
 while [[ $# > 0 ]]; do
   case "$1" in
     -h) # help
@@ -33,7 +35,8 @@ while [[ $# > 0 ]]; do
     echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
     echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
     echo -e "${BLUE}--product [ARG]${NC} to change target product name"
-    echo -e "${GREEN}Configuration file: ${BLUE}build.conf${NC}"
+    echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
+    echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
     echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
     shift
     exit 0
@@ -201,6 +204,12 @@ while [[ $# > 0 ]]; do
     ;;
     "--choose") # diff lunch commands
     echo
+    if [[ $flagConflict == 0 ]]; then
+      flagConflict="--choose"
+    else
+      echo -e "${RED}ERROR! Can't use ${BLUE}--choose${RED} with ${BLUE}${flagConflict}${NC}"
+      exit 3
+    fi
     TARGET_CHOOSE_CMD=$2
     echo -e "${GREEN}One-time target choose: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
     shift 2
@@ -208,9 +217,28 @@ while [[ $# > 0 ]]; do
     ;;
     "--product") # diff product fileName
     echo
+    if [[ $flagConflict == 0 ]]; then
+      flagConflict="--product"
+    else
+      echo -e "${RED}ERROR! Can't use ${BLUE}--product${RED} with ${BLUE}${flagConflict}${NC}"
+      exit 3
+    fi
     BUILD_PRODUCT_NAME=$2
     echo -e "${GREEN}One-time poduct name: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
     echo
+    shift 2
+    ;;
+    "--config") # diff config file
+    echo
+    if [[ $flagConflict == 0 ]]; then
+      flagConflict="--config"
+    else
+      echo -e "${RED}ERROR! Can't use ${BLUE}--config${RED} with ${BLUE}${flagConflict}${NC}"
+      exit 3
+    fi
+    configFile=$2
+    echo -e "${GREEN}Using one-time config file: ${BLUE}${configFile}${NC}"
+    source $configFile || (echo -e "${RED}ERROR! No such file${NC}"; exit 2)
     shift 2
     ;;
     -*|--*=) # unsupported flags
@@ -255,6 +283,7 @@ echo -e "${GREEN}ADB push destination:${BLUE} ${ADB_DEST_FOLDER}${NC}"
 if [[ $UNHANDLED_PATH != 'c' ]]; then
   echo -e "${GREEN}Move build destination:${BLUE} ${UNHANDLED_PATH}${NC}"
 fi
+sleep 3
 
 cd $SOURCE_PATH # changing dir to source path
 
