@@ -9,7 +9,7 @@ YELLOW="\033[1;33m" # For input requests
 BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
-source build.conf || (echo -e "${RED}Error! no ${BLUE}build.config${RED} file${NC}" && exit 2) # read configs
+source build.conf || (echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}" && exit 2) # read configs
 
 # handle arguments
 isUpload=0
@@ -17,21 +17,26 @@ isPush=0
 isClean=0
 isSilent=0
 isDry=0
-while getopts ":hiupcsd" opt; do
-  case $opt in
-    h ) # help
-    echo -e "${GREEN}Arguments available:${NC}"
+powerOpt=0
+while [[ $# > 0 ]]; do
+  case "$1" in
+    -h) # help
+    echo -e "${GREEN}Flags available:${NC}"
     echo -e "${BLUE}-h${NC} to show this dialog and exit"
     echo -e "${BLUE}-i${NC} for setup"
     echo -e "${BLUE}-u${NC} for upload"
     echo -e "${BLUE}-p${NC} for ADB push"
     echo -e "${BLUE}-c${NC} for a clean build"
     echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
+    echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
+    echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
+    echo -e "${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
     echo -e "${GREEN}Configuration file: ${BLUE}build.conf${NC}"
     echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
+    shift
     exit 0
     ;;
-    i ) # initialize (write a new build.conf)
+    -i) # initialize (write a new build.conf)
     echo -e "${GREEN}Initializing settings${NC}"
     echo -e "${GREEN}Default values are inside [] just press enter to apply them${NC}"
     echo -en "${YELLOW}Enter clean command [${BLUE}make clobber${YELLOW}]: ${NC}"
@@ -148,28 +153,51 @@ while getopts ":hiupcsd" opt; do
     fi
     echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
     read isExit
-    if [[ isExit != 'n' ]]; then
+    if [[ $isExit != 'n' ]]; then
       exit 0
     fi
+    shift
     ;;
-    u ) # upload / user build
+    -u) # upload / user build
     echo -e "${GREEN}User build!${NC}"
     isUpload=1
+    shift
     ;;
-    p ) # push
+    -p) # push
     echo -e "${GREEN}Push build!${NC}"
     isPush=1
+    shift
     ;;
-    c ) # clean
+    -c) # clean
     isClean=1
+    shift
     ;;
-    s ) # silent
+    -s) # silent
     echo -e "${GREEN}Silent build!${NC}"
     isSilent=1
+    shift
     ;;
-    d ) # dry
+    -d) # dry
     echo -e "${GREEN}Dry run!${NC}"
     isDry=1
+    shift
+    ;;
+    "--power") #power operations
+    powerOpt=$2
+    if [[ $powerOpt == "off" ]]; then
+      echo -e "${GREEN}Script will wait ${RED}1 minute${GREEN} and than perform a ${RED}power off${NC}"
+      shift 2
+    elif [[ $powerOpt == "reboot" ]]; then
+      echo -e "${GREEN}Script will wait ${RED}1 minute${GREEN} and than perform a ${RED}reboot${NC}"
+      shift 2
+    else
+      echo -e "${GREEN}ERROR! Power option not recognized.${NC}"
+      exit 1
+    fi
+    ;;
+    -*|--*=) # unsupported flags
+    echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
+    exit 1
     ;;
   esac
 done
@@ -268,6 +296,10 @@ fi
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
   PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -name "${BUILD_FILE_NAME}"`
+  if [[ $? != 0 ]]; then
+    echo -e "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
+    exit 1
+  fi
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
   if [[ $isSilent == 0 ]]; then
     if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
@@ -275,6 +307,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
     telegram-send --format html "Build done in <code>${buildTime}</code>"
   fi
+  # push build
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
     isOn='1' # Device is booted (reverse logic)
@@ -326,6 +359,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       else
         isFlash='y'
       fi
+      # flash build
       if [[ $isFlash == 'y' ]]; then
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
@@ -361,6 +395,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       fi
     fi
   fi
+  # upload build
   if [[ $isUpload == 1 ]]; then
     if [[ $isSilent == 0 ]]; then
       if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
@@ -398,6 +433,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       telegram-send "Upload failed"
     fi
   fi
+  # remove original build file
   if [[ $buildH == 1 ]]; then
     if [[ $AUTO_RM_BUILD != 1 ]]; then
       echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
@@ -421,6 +457,20 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
     disown
   fi
+
+  # power operations
+  if [[ $powerOpt == "off" ]]; then
+    echo -e "${GREEN}Powering off in ${BLUE}1 minute${NC}"
+    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
+    sleep 60
+    poweroff
+  elif [[ $powerOpt == "reboot" ]]; then
+    echo -e "${GREEN}Rebooting in 1 minute${NC}"
+    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel"
+    sleep 60
+    reboot
+  fi
+
   exit 0
 fi
 # If build fails:
