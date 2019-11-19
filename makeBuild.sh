@@ -285,7 +285,7 @@ if [[ $UNHANDLED_PATH != 'c' ]]; then
 fi
 sleep 3
 
-cd $SOURCE_PATH # changing dir to source path
+cd $SOURCE_PATH || echo -e "${RED}ERROR! Invalid source path ${BLUE}${SOURCE_PATH}${NC}" # changing dir to source path
 
 # build
 source "${SOURCE_PATH}/build/envsetup.sh"
