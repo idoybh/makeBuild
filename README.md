@@ -17,10 +17,14 @@ You can start the script with the following flags:
   * _[ARG]_ should be: `off` or `reboot`
 * **--choose _[CMD]_** to change target choose command (see [here](#target_choose_cmd)) temporarily
 * **--product _[ARG]_** to change build product name (see [here](#build_product_name)) temporarily
+* **--config _[FILE]_** to change the config file temporarily
 
-**Note** `--choose` and `--product` should be used together logically and will **not** affect build.conf
+**Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together.
 
 ## build.conf
+The default configuration file of the script.
+Can be changed per run with the flag `--config`. 
+
 ##### WAS_INIT
 Just a flag to show weather the **-i** flag was used before.
 Set this to any other value than 0 to dismiss the warning.
