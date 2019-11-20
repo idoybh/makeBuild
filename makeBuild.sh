@@ -427,6 +427,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Restarting ADB server${NC}"
           adb kill-server
           adb start-server
+        else
+          echo -e "${GREEN}Restarting ADB server${NC}"
+          adb kill-server
+          adb start-server
         fi
         # Add extra pre-flash operations here
         fileName=`basename $PATH_TO_BUILD_FILE`
