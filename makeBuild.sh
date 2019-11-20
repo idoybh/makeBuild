@@ -435,9 +435,18 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         # Add extra pre-flash operations here
         fileName=`basename $PATH_TO_BUILD_FILE`
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
-        adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
-        # Add additional flash operations here (magisk provided as example)
-        adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
+        isFlashed=0
+        while [[ $isFlashed == 0 ]]; do
+          adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
+          if [[ $? != 0 ]]; then
+            echo -en "${RED}Flash error. Press any key to try again"
+            read -n1 temp
+          else
+            isFlashed=1
+          fi
+          # Add additional flash operations here (magisk provided as example)
+          adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
+        done
         if [[ $AUTO_REBOOT == 0 ]]; then
           echo -en "${YELLOW}Press any key to reboot${NC}"
           read -n1 temp
