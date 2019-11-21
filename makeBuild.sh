@@ -353,7 +353,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
-    telegram-send --format html "Build done in <code>${buildTime}</code>"
+    telegram-send --format html "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
   fi
   # push build
   if [[ $isPush == 1 ]]; then
@@ -479,9 +479,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         fileLink=`eval $cmd`
         if [[ $? == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-          telegram-send --disable-web-page-preview --format html "Upload done: <a href=\"${fileLink}\">LINK</a>"
+          telegram-send --disable-web-page-preview --format html "Uploading <code>${BUILD_PRODUCT_NAME}</code> done: <a href=\"${fileLink}\">LINK</a>"
         else
-          echo -e "${RED}Getting link failed${NC}"
+          echo -e "${RED}Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed${NC}"
         fi
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
@@ -491,7 +491,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       buildH=1
     else
       echo -e "${RED}Upload failed${NC}"
-      telegram-send "Upload failed"
+      telegram-send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
     fi
   fi
   # remove original build file
