@@ -344,7 +344,7 @@ fi
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
   PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -name "${BUILD_FILE_NAME}"`
-  if [[ $? != 0 ]]; then
+  if [[ $? != 0 ]] || [[ $PATH_TO_BUILD_FILE = '' ]]; then
     echo -e "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
     exit 1
   fi
