@@ -343,8 +343,14 @@ fi
 # handle built file
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
-  PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -name "${BUILD_FILE_NAME}"`
-  if [[ $? != 0 ]] || [[ $PATH_TO_BUILD_FILE = '' ]]; then
+  # Count build files:
+  NOFiles=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /`
+  if [[ $NOFiles > 1 ]]; then
+    echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
+    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}"`
+  elif [[ $NOFiles == 1 ]]; then
+    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}"`
+  else
     echo -e "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
     exit 1
   fi
