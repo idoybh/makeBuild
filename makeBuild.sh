@@ -471,9 +471,19 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       telegram-send "Uploading build"
     fi
     echo -e "${GREEN}Uploading...${NC}"
-    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
-    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
-    if [[ $? == 0 ]]; then
+    isUploaded=0
+    if [[ -f $PATH_TO_BUILD_FILE ]]; then
+      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
+      if [[ $? == 0 ]]; then
+        isUploaded=1
+      fi
+    fi
+    if [[ -f "${PATH_TO_BUILD_FILE}.md5sum" ]]; then
+      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
+    else
+      echo -e "${RED}Couldn't find md5sum file. Not uploading${NC}"
+    fi
+    if [[ $isUploaded == 1 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
         if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
@@ -497,7 +507,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       buildH=1
     else
       echo -e "${RED}Upload failed${NC}"
-      telegram-send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+      telegram-send --format html "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
     fi
   fi
   # remove original build file
