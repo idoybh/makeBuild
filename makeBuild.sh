@@ -1,5 +1,12 @@
 #!/bin/bash
 # Script was made by Ido Ben-Hur (@idoybh) due to pure bordom and to save time building diff roms
+adb_reset()
+{
+  echo -e "${GREEN}Restarting ADB server${NC}"
+  adb kill-server
+  adb start-server
+}
+
 cd "$(dirname "$0")"
 
 # Colors
@@ -368,9 +375,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     isRec='1' # Device is on recovery mode (reverse logic)
     isPushed='1' # Weater the push went fine (reverse logic)
     while [[ $isOn != '0' ]] && [[ $isRec != '0' ]] && [[ $isPushed != '0' ]]; do
-      echo -e "${GREEN}Restarting ADB server${NC}"
-      adb kill-server
-      adb start-server
+      adb_reset
       adb devices | grep -w 'device' &> /dev/null
       isOn=$?
       adb devices | grep -w 'recovery' &> /dev/null
@@ -430,13 +435,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
           read -n1 temp
           echo
-          echo -e "${GREEN}Restarting ADB server${NC}"
-          adb kill-server
-          adb start-server
+          adb_reset
         else
-          echo -e "${GREEN}Restarting ADB server${NC}"
-          adb kill-server
-          adb start-server
+          adb_reset
         fi
         # Add extra pre-flash operations here
         fileName=`basename $PATH_TO_BUILD_FILE`
