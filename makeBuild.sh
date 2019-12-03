@@ -498,7 +498,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
           telegram-send --disable-web-page-preview --format html "Uploading <code>${BUILD_PRODUCT_NAME}</code> done: <a href=\"${fileLink}\">LINK</a>"
         else
-          echo -e "${RED}Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed${NC}"
+          echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
+          telegram-send --format html "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
         fi
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
