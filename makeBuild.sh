@@ -135,6 +135,11 @@ while [[ $# > 0 ]]; do
     else
       AUTO_REBOOT=0
     fi
+    echo -en "${YELLOW}Set TWRP decryption pin (0 to disable) [${BLUE}0${YELLOW}]: ${NC}"
+    read TWRP_PIN
+    if [[ $TWRP_PIN = '' ]]; then
+      TWRP_PIN=0
+    fi
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
     read isWriteConf
@@ -160,7 +165,8 @@ while [[ $# > 0 ]]; do
       echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
       echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
       echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
-      echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery"
+      echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> build.conf
+      echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> build.conf
       echo "" >> build.conf
     fi
     echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
@@ -431,11 +437,28 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
             isRec=$?
             sleep 3
           done
+          isDecrypted=0
           echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-          echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
-          read -n1 temp
-          echo
-          adb_reset
+          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_PIN != 'c' ]]; then
+            adb_reset
+            echo -e "${GREEN}Trying decryption with provided pin${NC}"
+            adb shell twrp decrypt $TWRP_PIN
+            if [[ $? == 0 ]]; then
+              isDecrypted=1
+              echo -e "${GREEN}Data decrypted${NC}"
+              echo -e "${GREEN}Waiting for ${BLUE}5 seconds${NC}"
+              sleep 5
+              adb_reset
+            else
+              echo -e "${RED}Data decryption failed. Please try manually${NC}"
+            fi
+          fi
+          if [[ $TWRP_PIN != 'c' ]] && [[ $isDecrypted != 1 ]]; then
+            echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
+            read -n1 temp
+            echo
+            adb_reset
+          fi
         else
           adb_reset
         fi
@@ -452,7 +475,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
             isFlashed=1
           fi
           # Add additional flash operations here (magisk provided as example)
-          adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
+          # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
         done
         if [[ $AUTO_REBOOT == 0 ]]; then
           echo -en "${YELLOW}Press any key to reboot${NC}"
