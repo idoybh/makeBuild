@@ -23,7 +23,7 @@ You can start the script with the following flags:
 
 ## build.conf
 The default configuration file of the script.
-Can be changed per run with the flag `--config`. 
+Can be changed per run with the flag `--config`.
 
 ##### WAS_INIT
 Just a flag to show weather the **-i** flag was used before.
@@ -85,6 +85,12 @@ Set to `0` by default.
 ##### AUTO_REBOOT
 Set this to `1` to skip waiting for a keypress on each reboot.
 This will make the script automatically reboot from and to recovery.
+Set to `0` by default.
+##### TWRP_PIN
+Set this to the decryption pin used to decrypt data in TWRP.
+Setting this to `0` will make the script wait for your manual decryption.
+Setting this to `c` will skip waiting for decryption altogether (for decrypted devices).
+For more information regarding patterns refer to: https://twrp.me/faq/openrecoveryscript.html
 Set to `0` by default.
 
 ## Output color coding
