@@ -1,10 +1,138 @@
 #!/bin/bash
 # Script was made by Ido Ben-Hur (@idoybh) due to pure bordom and to save time building diff roms
+
+# resets adb server
 adb_reset()
 {
   echo -e "${GREEN}Restarting ADB server${NC}"
   adb kill-server
   adb start-server
+}
+
+# waits for a recognizeable device in given state
+# $1: device state
+# $2: delay between scans in seconds
+adb_wait()
+{
+  state=$1
+  delay=$2
+  echo -e "${GREEN}Waiting for device${NC}"
+  while [[ $isDet != '0' ]]; do # wait until detected
+    adb kill-server &> /dev/null
+    adb start-server &> /dev/null
+    adb devices | grep -w "${state}" &> /dev/null
+    isDet=$?
+    sleep $delay
+  done
+}
+
+# sends a msg in telegram if not silent.
+# $1: the msg to send
+tg_send()
+{
+  tgmsg=$1
+  if [[ $isSilent == 0 ]]; then
+    if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+      eval $TG_SEND_PRIOR_CMD
+    fi
+    telegram-send --disable-web-page-preview --format html "${tgmsg}"
+  fi
+}
+
+# prints the help msg
+print_help()
+{
+  echo -e "${GREEN}Flags available:${NC}"
+  echo -e "${BLUE}-h${NC} to show this dialog and exit"
+  echo -e "${BLUE}-i${NC} for setup"
+  echo -e "${BLUE}-u${NC} for upload"
+  echo -e "${BLUE}-p${NC} for ADB push"
+  echo -e "${BLUE}-c${NC} for a clean build"
+  echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
+  echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
+  echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
+  echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
+  echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
+  echo -e "${BLUE}--product [ARG]${NC} to change target product name"
+  echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
+  echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
+  echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
+}
+
+# rewrites default config file
+# TODO: add support to write other files
+rewrite_config()
+{
+  rm build.conf
+  touch build.conf
+  echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > build.conf
+  echo "# Except UPLOAD_PATH - Must be absolute" >> build.conf
+  echo "export WAS_INIT=1 # weather initialized or not" >> build.conf
+  echo "export CLEAN_CMD='${CLEAN_CMD}' # command for clean build" >> build.conf
+  echo "export TARGET_CHOOSE_CMD='${TARGET_CHOOSE_CMD}' # command to choose target" >> build.conf
+  echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> build.conf
+  echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> build.conf
+  echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> build.conf
+  echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> build.conf
+  echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> build.conf
+  echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> build.conf
+  echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> build.conf
+  echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> build.conf
+  echo "export BUILD_PRODUCT_NAME='${BUILD_PRODUCT_NAME}' # product name in out folder" >> build.conf
+  echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> build.conf
+  echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
+  echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
+  echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
+  echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> build.conf
+  echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> build.conf
+  echo "" >> build.conf
+}
+
+# performes required pre build operations
+pre_build()
+{
+  source "${SOURCE_PATH}/build/envsetup.sh"
+  if [[ $isClean == 1 ]]; then
+    echo -e "${GREEN}Cleanning build${NC}"
+    eval $CLEAN_CMD
+  fi
+  eval $TARGET_CHOOSE_CMD # target
+  tg_send "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
+  start_time=$(date +"%s")
+}
+
+# formats the time passed relative to $start_time and stores it in $buildTime
+get_time()
+{
+  end_time=$(date +"%s")
+  tdiff=$(($end_time-$start_time)) # time diff
+
+  # Formatting total build time
+  hours=$(($tdiff / 3600 ))
+  hoursOut=$hours
+  if [[ ${#hours} -lt 2 ]]; then
+    hoursOut="0${hours}"
+  fi
+
+  mins=$((($tdiff % 3600) / 60))
+  minsOut=$mins
+  if [[ ${#mins} -lt 2 ]]; then
+    minsOut="0${mins}"
+  fi
+
+  secs=$(($tdiff % 60))
+  if [[ ${#secs} -lt 2 ]]; then
+    secs="0${secs}"
+  fi
+
+  buildTime="" # will store the formatted time to output
+  if [[ $hours -gt 0 ]]; then
+    buildTime="${hoursOut}:${minsOut}:${secs} (hh:mm:ss)"
+  elif [[ $mins -gt 0 ]]; then
+    buildTime="${minsOut}:${secs} (mm:ss)"
+  else
+    buildTime="${secs} seconds"
+  fi
 }
 
 cd "$(dirname "$0")"
@@ -30,21 +158,7 @@ flagConflict=0
 while [[ $# > 0 ]]; do
   case "$1" in
     -h) # help
-    echo -e "${GREEN}Flags available:${NC}"
-    echo -e "${BLUE}-h${NC} to show this dialog and exit"
-    echo -e "${BLUE}-i${NC} for setup"
-    echo -e "${BLUE}-u${NC} for upload"
-    echo -e "${BLUE}-p${NC} for ADB push"
-    echo -e "${BLUE}-c${NC} for a clean build"
-    echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
-    echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
-    echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
-    echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
-    echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
-    echo -e "${BLUE}--product [ARG]${NC} to change target product name"
-    echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
-    echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
-    echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
+    print_help
     shift
     exit 0
     ;;
@@ -145,29 +259,7 @@ while [[ $# > 0 ]]; do
     read isWriteConf
     if [[ $isWriteConf != 'n' ]]; then
       echo -e "${GREEN}Rewriting file${NC}"
-      rm build.conf
-      touch build.conf
-      echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > build.conf
-      echo "# Except UPLOAD_PATH - Must be absolute" >> build.conf
-      echo "export WAS_INIT=1 # weather initialized or not" >> build.conf
-      echo "export CLEAN_CMD='${CLEAN_CMD}' # command for clean build" >> build.conf
-      echo "export TARGET_CHOOSE_CMD='${TARGET_CHOOSE_CMD}' # command to choose target" >> build.conf
-      echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> build.conf
-      echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> build.conf
-      echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> build.conf
-      echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> build.conf
-      echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> build.conf
-      echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> build.conf
-      echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> build.conf
-      echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> build.conf
-      echo "export BUILD_PRODUCT_NAME='${BUILD_PRODUCT_NAME}' # product name in out folder" >> build.conf
-      echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> build.conf
-      echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
-      echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
-      echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
-      echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> build.conf
-      echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> build.conf
-      echo "" >> build.conf
+      rewrite_config
     fi
     echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
     read isExit
@@ -301,19 +393,7 @@ sleep 3
 cd $SOURCE_PATH || echo -e "${RED}ERROR! Invalid source path ${BLUE}${SOURCE_PATH}${NC}" # changing dir to source path
 
 # build
-source "${SOURCE_PATH}/build/envsetup.sh"
-if [[ $isClean == 1 ]]; then
-  echo -e "${GREEN}Cleanning build${NC}"
-  eval $CLEAN_CMD
-fi
-eval $TARGET_CHOOSE_CMD # target
-if [[ $isSilent == 0 ]]; then
-  if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-    eval $TG_SEND_PRIOR_CMD
-  fi
-  telegram-send --format html "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
-fi
-start_time=$(date +"%s")
+pre_build
 
 if [[ $isDry == 0 ]]; then
   eval $BUILD_CMD # build
@@ -323,35 +403,7 @@ else
   buildRes=0
 fi
 
-end_time=$(date +"%s")
-tdiff=$(($end_time-$start_time)) # time diff
-
-# Formatting total build time
-hours=$(($tdiff / 3600 ))
-hoursOut=$hours
-if [[ ${#hours} -lt 2 ]]; then
-  hoursOut="0${hours}"
-fi
-
-mins=$((($tdiff % 3600) / 60))
-minsOut=$mins
-if [[ ${#mins} -lt 2 ]]; then
-  minsOut="0${mins}"
-fi
-
-secs=$(($tdiff % 60))
-if [[ ${#secs} -lt 2 ]]; then
-  secs="0${secs}"
-fi
-
-buildTime="" # will store the formatted time to output
-if [[ $hours -gt 0 ]]; then
-  buildTime="${hoursOut}:${minsOut}:${secs} (hh:mm:ss)"
-elif [[ $mins -gt 0 ]]; then
-  buildTime="${minsOut}:${secs} (mm:ss)"
-else
-  buildTime="${secs} seconds"
-fi
+get_time
 
 # handle built file
 buildH=0 # build handled?
@@ -368,12 +420,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     exit 1
   fi
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
-  if [[ $isSilent == 0 ]]; then
-    if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-      eval $TG_SEND_PRIOR_CMD
-    fi
-    telegram-send --format html "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
-  fi
+  tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
   # push build
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
@@ -429,14 +476,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
           adb reboot recovery
-          echo -e "${GREEN}Waiting for device${NC}"
-          while [[ $isRec != '0' ]]; do # wait for recovery device
-            adb kill-server &> /dev/null
-            adb start-server &> /dev/null
-            adb devices | grep -w 'recovery' &> /dev/null
-            isRec=$?
-            sleep 3
-          done
+          adb_wait 'recovery' 3
           isDecrypted=0
           echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
           if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_PIN != 'c' ]]; then
@@ -488,18 +528,15 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then
-    if [[ $isSilent == 0 ]]; then
-      if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-        eval $TG_SEND_PRIOR_CMD
-      fi
-      telegram-send "Uploading build"
-    fi
+    tg_send "Uploading build"
     echo -e "${GREEN}Uploading...${NC}"
     isUploaded=0
     if [[ -f $PATH_TO_BUILD_FILE ]]; then
+      start_time=$(date +"%s")
       eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
       if [[ $? == 0 ]]; then
         isUploaded=1
+        get_time
       fi
     fi
     if [[ -f "${PATH_TO_BUILD_FILE}.md5sum" ]]; then
@@ -510,19 +547,16 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $isUploaded == 1 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
-        if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-          eval $TG_SEND_PRIOR_CMD
-        fi
         fileName=`basename $PATH_TO_BUILD_FILE`
         # Edit next line according to the way you fetch the link:
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=`eval $cmd`
         if [[ $? == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-          telegram-send --disable-web-page-preview --format html "Uploading <code>${BUILD_PRODUCT_NAME}</code> done: <a href=\"${fileLink}\">LINK</a>"
+          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
-          telegram-send --format html "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
+          tg_send "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
         fi
       fi
       if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
@@ -532,7 +566,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       buildH=1
     else
       echo -e "${RED}Upload failed${NC}"
-      telegram-send --format html "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+      tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
     fi
   fi
   # remove original build file
@@ -567,7 +601,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     sleep 60
     poweroff
   elif [[ $powerOpt == "reboot" ]]; then
-    echo -e "${GREEN}Rebooting in 1 minute${NC}"
+    echo -e "${GREEN}Rebooting in ${BLUE}1 minute${NC}"
     echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel"
     sleep 60
     reboot
@@ -577,15 +611,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
 fi
 # If build fails:
 if [[ $isSilent == 0 ]]; then
-  if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
-    eval $TG_SEND_PRIOR_CMD
-  fi
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
-    telegram-send --format html "Build failed after <code>${buildTime}</code>."
+    tg_send "Build failed after <code>${buildTime}</code>."
     telegram-send --file "${SOURCE_PATH}/out/error.log"
   else
     echo -e "${RED}Can't find error file. Assuming build got canceled"
-    telegram-send --format html "Build was canceled after <code>${buildTime}</code>."
+    tg_send "Build was canceled after <code>${buildTime}</code>."
   fi
 fi
 exit $?
