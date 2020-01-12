@@ -539,8 +539,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         get_time
       fi
     fi
+    isMD5Uploaded=0
     if [[ -f "${PATH_TO_BUILD_FILE}.md5sum" ]]; then
       eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
+      isMD5Uploaded=1
     else
       echo -e "${RED}Couldn't find md5sum file. Not uploading${NC}"
     fi
@@ -551,9 +553,19 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         # Edit next line according to the way you fetch the link:
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=`eval $cmd`
-        if [[ $? == 0 ]]; then
+        isFileLinkFailed=$?
+        if [[ isMD5Uploaded == 1 ]]; then
+          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.md5sum"
+          md5Link=`eval $cmd`
+          isMD5LinkFailed=$?
+        fi
+        if [[ isFileLinkFailed == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+          if [[ isMD5LinkFailed == 0 ]]; then
+            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
+          else
+            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+          fi
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
           tg_send "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
