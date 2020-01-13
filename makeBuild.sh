@@ -59,33 +59,36 @@ print_help()
   echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
 }
 
-# rewrites default config file
-# TODO: add support to write other files
+# rewrites given config file
+# $1: config file path
 rewrite_config()
 {
-  rm build.conf
-  touch build.conf
-  echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > build.conf
-  echo "# Except UPLOAD_PATH - Must be absolute" >> build.conf
-  echo "export WAS_INIT=1 # weather initialized or not" >> build.conf
-  echo "export CLEAN_CMD='${CLEAN_CMD}' # command for clean build" >> build.conf
-  echo "export TARGET_CHOOSE_CMD='${TARGET_CHOOSE_CMD}' # command to choose target" >> build.conf
-  echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> build.conf
-  echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> build.conf
-  echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> build.conf
-  echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> build.conf
-  echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> build.conf
-  echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> build.conf
-  echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> build.conf
-  echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> build.conf
-  echo "export BUILD_PRODUCT_NAME='${BUILD_PRODUCT_NAME}' # product name in out folder" >> build.conf
-  echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> build.conf
-  echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> build.conf
-  echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> build.conf
-  echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> build.conf
-  echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> build.conf
-  echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> build.conf
-  echo "" >> build.conf
+  confPath=$1
+  if [ -f $confPath ]; then
+    rm $confPath
+  fi
+  touch $confPath
+  echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > $confPath
+  echo "# Except UPLOAD_PATH - Must be absolute" >> $confPath
+  echo "export WAS_INIT=1 # weather initialized or not" >> $confPath
+  echo "export CLEAN_CMD='${CLEAN_CMD}' # command for clean build" >> $confPath
+  echo "export TARGET_CHOOSE_CMD='${TARGET_CHOOSE_CMD}' # command to choose target" >> $confPath
+  echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> $confPath
+  echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> $confPath
+  echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> $confPath
+  echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> $confPath
+  echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> $confPath
+  echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> $confPath
+  echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> $confPath
+  echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> $confPath
+  echo "export BUILD_PRODUCT_NAME='${BUILD_PRODUCT_NAME}' # product name in out folder" >> $confPath
+  echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> $confPath
+  echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> $confPath
+  echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> $confPath
+  echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> $confPath
+  echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> $confPath
+  echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> $confPath
+  echo "" >> $confPath
 }
 
 # performes required pre build operations
@@ -255,13 +258,18 @@ while [[ $# > 0 ]]; do
       TWRP_PIN=0
     fi
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
-    echo -en "${YELLOW}Write current config to file? [y]/n: ${NC}"
+    echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isWriteConf
     if [[ $isWriteConf != 'n' ]]; then
+      echo -en "${YELLOW}Enter config file name [${BLUE}build.conf${YELLOW}]: ${NC}"
+      read confPath
+      if [[ $confPath == '' ]]; then
+        confPath="build.conf"
+      fi
       echo -e "${GREEN}Rewriting file${NC}"
-      rewrite_config
+      rewrite_config $confPath
     fi
-    echo -en "${YELLOW}Continue script? [y]/n: ${NC}"
+    echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isExit
     if [[ $isExit != 'n' ]]; then
       exit 0
@@ -554,14 +562,14 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=`eval $cmd`
         isFileLinkFailed=$?
-        if [[ isMD5Uploaded == 1 ]]; then
+        if [[ $isMD5Uploaded == 1 ]]; then
           cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.md5sum"
           md5Link=`eval $cmd`
           isMD5LinkFailed=$?
         fi
-        if [[ isFileLinkFailed == 0 ]]; then
+        if [[ $isFileLinkFailed == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-          if [[ isMD5LinkFailed == 0 ]]; then
+          if [[ $isMD5LinkFailed == 0 ]]; then
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
           else
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
