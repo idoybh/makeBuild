@@ -356,6 +356,7 @@ while [[ $# > 0 ]]; do
     ;;
     -*|--*=) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
+    print_help
     exit 1
     ;;
   esac
