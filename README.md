@@ -7,7 +7,7 @@ This script uses *telegram-send* (see: https://github.com/rahiel/telegram-send) 
 ## Flags
 You can start the script with the following flags:
 * **-h** to show help and other flags (stands for help)
-* **-i** to setup build.config through a CLI (stands for init)
+* **-i** to setup a new / overwrite .config through a CLI (stands for init)
 * **-u** to upload the built file (stands for upload / user)
 * **-p** to push the built file through adb (stands for push)
 * **-c** to make a clean build (stands for clean - duh)
