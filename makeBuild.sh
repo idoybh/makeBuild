@@ -623,7 +623,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     poweroff
   elif [[ $powerOpt == "reboot" ]]; then
     echo -e "${GREEN}Rebooting in ${BLUE}1 minute${NC}"
-    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel"
+    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
     sleep 60
     reboot
   fi
@@ -636,7 +636,7 @@ if [[ $isSilent == 0 ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
     telegram-send --file "${SOURCE_PATH}/out/error.log"
   else
-    echo -e "${RED}Can't find error file. Assuming build got canceled"
+    echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
     tg_send "Build was canceled after <code>${buildTime}</code>."
   fi
 fi
