@@ -27,7 +27,7 @@ adb_wait()
 }
 
 # sends a msg in telegram if not silent.
-# $1: the msg to send
+# $1: the msg / file to send
 tg_send()
 {
   tgmsg=$1
@@ -35,7 +35,11 @@ tg_send()
     if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
-    telegram-send --disable-web-page-preview --format html "${tgmsg}"
+    if [[ -f "${tgmsg}" ]]; then
+      telegram-send --file "${tgmsg}"
+    else
+      telegram-send --disable-web-page-preview --format html "${tgmsg}"
+    fi
   fi
 }
 
@@ -634,7 +638,7 @@ fi
 if [[ $isSilent == 0 ]]; then
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
-    telegram-send --file "${SOURCE_PATH}/out/error.log"
+    tg_send "${SOURCE_PATH}/out/error.log"
   else
     echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
     tg_send "Build was canceled after <code>${buildTime}</code>."
