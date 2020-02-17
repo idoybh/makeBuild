@@ -1,6 +1,10 @@
 #!/bin/bash
 # Script was made by Ido Ben-Hur (@idoybh) due to pure bordom and to save time building diff roms
 
+#######################
+##     Functions     ##
+#######################
+
 # resets adb server
 adb_reset()
 {
@@ -32,7 +36,7 @@ tg_send()
 {
   tgmsg=$1
   if [[ $isSilent == 0 ]]; then
-    if [[ $TG_SEND_PRIOR_CMD != 'c' ]]; then
+    if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
     if [[ -f "${tgmsg}" ]]; then
@@ -63,36 +67,77 @@ print_help()
   echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
 }
 
+# returns a property value from the config file
+# $1: property name to read
+# $2: config file name
+config_read()
+{
+  rProp=$1
+  cFile=$2
+  lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
+  echo $(sed "${lineNO}q;d" $cFile | awk -F  "=" '{print $NF}')
+}
+
+# sets a property vlaue to the config file
+# $1: property name
+# $2: value
+# $3: config file name
+config_write()
+{
+  wProp=$1
+  wVal=$2
+  cFile=$3
+  lineNO=$(awk "/${wProp}/{ print NR; exit }" $cFile)
+  sed -i "${lineNO}s,=.*,=${wVal}," $cFile
+}
+
 # rewrites given config file
 # $1: config file path
 rewrite_config()
 {
   confPath=$1
-  if [ -f $confPath ]; then
-    rm $confPath
+  config_write "WAS_INIT" 1 $confPath
+  config_write "CLEAN_CMD" "${CLEAN_CMD}" $confPath
+  config_write "TARGET_CHOOSE_CMD" "${TARGET_CHOOSE_CMD}" $confPath
+  config_write "BUILD_CMD" "${BUILD_CMD}" $confPath
+  config_write "FILE_MANAGER_CMD" "${FILE_MANAGER_CMD}" $confPath
+  config_write "UPLOAD_CMD" "${UPLOAD_CMD}" $confPath
+  config_write "UPLOAD_LINK_CMD" "${UPLOAD_LINK_CMD}" $confPath
+  config_write "TG_SEND_PRIOR_CMD" "${TG_SEND_PRIOR_CMD}" $confPath
+  config_write "UPLOAD_DEST" "${UPLOAD_DEST}" $confPath
+  config_write "UPLOAD_PATH" "${UPLOAD_PATH}" $confPath
+  config_write "SOURCE_PATH" "${SOURCE_PATH}" $confPath
+  config_write "BUILD_PRODUCT_NAME" "${BUILD_PRODUCT_NAME}" $confPath
+  config_write "BUILD_FILE_NAME" "${BUILD_FILE_NAME}" $confPath
+  config_write "ADB_DEST_FOLDER" "${ADB_DEST_FOLDER}" $confPath
+  config_write "UNHANDLED_PATH" "${UNHANDLED_PATH}" $confPath
+  config_write "AUTO_RM_BUILD" "${AUTO_RM_BUILD}" $confPath
+  config_write "AUTO_REBOOT" "${AUTO_REBOOT}" $confPath
+  config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
+}
+
+# loads given config file
+# exists script if not found
+# $1: config file path
+load_config()
+{
+  cFile=$1
+  if [[ -f $cFile ]]; then
+    linesNO=$(wc -l $cFile)
+    linesNO="${linesNO:0:2}"
+    for (( ii = 1; ii <= $linesNO; ii++ )); do
+      curLine=$(sed "${ii}q;d" $cFile)
+      firstChar="${curLine:0:1}"
+      if [[ $firstChar != "#" ]] && [[ $firstChar != '' ]]; then
+        cVar=$(echo $curLine | awk '{print $1}')
+        cVal=$(config_read $cVar $cFile)
+        eval "export ${cVar}=\"${cVal}\""
+      fi
+    done
+  else
+    echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}"
+    exit 2
   fi
-  touch $confPath
-  echo "# config file for makeBuild.sh. Paths can be absolute / relative to script dir" > $confPath
-  echo "# Except UPLOAD_PATH - Must be absolute" >> $confPath
-  echo "export WAS_INIT=1 # weather initialized or not" >> $confPath
-  echo "export CLEAN_CMD='${CLEAN_CMD}' # command for clean build" >> $confPath
-  echo "export TARGET_CHOOSE_CMD='${TARGET_CHOOSE_CMD}' # command to choose target" >> $confPath
-  echo "export BUILD_CMD='${BUILD_CMD}' # command to make the build" >> $confPath
-  echo "export FILE_MANAGER_CMD='${FILE_MANAGER_CMD}' # command to open file manager (set to 'c' for none)" >> $confPath
-  echo "export UPLOAD_CMD='${UPLOAD_CMD}' # command to upload the build" >> $confPath
-  echo "export UPLOAD_LINK_CMD='${UPLOAD_LINK_CMD}' # command to get the uploaded build link" >> $confPath
-  echo "export TG_SEND_PRIOR_CMD='c' # command to run before each telegram-send ('c' for none)" >> $confPath
-  echo "export UPLOAD_DEST='${UPLOAD_DEST}' # upload command suffix (destiny)" >> $confPath
-  echo "export UPLOAD_PATH='${UPLOAD_PATH}' # upload folder path in local ('c' for none)" >> $confPath
-  echo "export SOURCE_PATH='${SOURCE_PATH}' # source path" >> $confPath
-  echo "export BUILD_PRODUCT_NAME='${BUILD_PRODUCT_NAME}' # product name in out folder" >> $confPath
-  echo "export BUILD_FILE_NAME='${BUILD_FILE_NAME}' # built zip file to handle in out folder" >> $confPath
-  echo "export ADB_DEST_FOLDER='${ADB_DEST_FOLDER}' # path from internal storage to desired folder" >> $confPath
-  echo "export UNHANDLED_PATH='${UNHANDLED_PATH}' # default path to move built zip file ('c' for none)" >> $confPath
-  echo "export AUTO_RM_BUILD=${AUTO_RM_BUILD} # weather to automaticly remove original build file" >> $confPath
-  echo "export AUTO_REBOOT=${AUTO_REBOOT} # weather to automaticly reboot to and from recovery" >> $confPath
-  echo "export TWRP_PIN=${TWRP_PIN} # set to twrp pin to automatically decrypt data (0 to disable, c for decrypted)" >> $confPath
-  echo "" >> $confPath
 }
 
 # performes required pre build operations
@@ -142,6 +187,10 @@ get_time()
   fi
 }
 
+######################
+##       Main       ##
+######################
+
 cd "$(dirname "$0")"
 
 # Colors
@@ -151,7 +200,8 @@ YELLOW="\033[1;33m" # For input requests
 BLUE="\033[1;36m" # For info
 NC="\033[0m" # reset color
 
-source build.conf || (echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}"; exit 2) # read configs
+# Load default config file
+load_config build.conf
 
 # handle arguments
 configFile="build.conf"
@@ -177,10 +227,10 @@ while [[ $# > 0 ]]; do
     if [[ $CLEAN_CMD = '' ]]; then
       CLEAN_CMD='make clobber'
     fi
-    echo -en "${YELLOW}Enter target choose command [${BLUE}lunch aosip_dumpling-userdebug${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter target choose command [${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
     read TARGET_CHOOSE_CMD
     if [[ $TARGET_CHOOSE_CMD = '' ]]; then
-      TARGET_CHOOSE_CMD='lunch aosip_dumpling-userdebug'
+      TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
     fi
     echo -en "${YELLOW}Enter build command [${BLUE}mka kronic${YELLOW}]: ${NC}"
     read BUILD_CMD
@@ -192,6 +242,9 @@ while [[ $# > 0 ]]; do
     if [[ $FILE_MANAGER_CMD = '' ]]; then
       FILE_MANAGER_CMD='dolphin'
     fi
+    if [[ $FILE_MANAGER_CMD = 'c' ]]; then
+      FILE_MANAGER_CMD=''
+    fi
     echo -en "${YELLOW}Enter upload command [${BLUE}rclone copy -v${YELLOW}]: ${NC}"
     read UPLOAD_CMD
     if [[ $UPLOAD_CMD = '' ]]; then
@@ -200,22 +253,22 @@ while [[ $# > 0 ]]; do
     echo -en "${YELLOW}Enter upload link command [${BLUE}rclone link${YELLOW}]: ${NC}"
     read UPLOAD_LINK_CMD
     if [[ $UPLOAD_LINK_CMD = '' ]]; then
-      UPLOAD_CMD='rclone link'
+      UPLOAD_LINK_CMD='rclone link'
     fi
-    echo -en "${YELLOW}Enter upload command [${BLUE}c${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
     read TG_SEND_PRIOR_CMD
-    if [[ $TG_SEND_PRIOR_CMD = '' ]]; then
-      TG_SEND_PRIOR_CMD='c'
-    fi
     echo -en "${YELLOW}Enter upload destination (remote) [${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
     read UPLOAD_DEST
     if [[ $UPLOAD_DEST = '' ]]; then
       UPLOAD_DEST='GDrive:/builds'
     fi
-    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) [${BLUE}gdrive:/idoybh2@gmail.com/builds/${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) [${BLUE}gdrive:/idoybh2/builds/${YELLOW}]: ${NC}"
     read UPLOAD_PATH
     if [[ $UPLOAD_PATH = '' ]]; then
-      UPLOAD_PATH='gdrive:/idoybh2@gmail.com/builds/'
+      UPLOAD_PATH='gdrive:/idoybh2/builds/'
+    fi
+    if [[ $UPLOAD_PATH = 'c' ]]; then
+      UPLOAD_PATH=''
     fi
     echo -en "${YELLOW}Enter source path [${BLUE}.${YELLOW}]: ${NC}"
     read SOURCE_PATH
@@ -227,10 +280,10 @@ while [[ $# > 0 ]]; do
     if [[ $BUILD_PRODUCT_NAME = '' ]]; then
       BUILD_PRODUCT_NAME='dumpling'
     fi
-    echo -en "${YELLOW}Enter built zip file name [${BLUE}AOSiP*.zip${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter built zip file name [${BLUE}Derp*.zip${YELLOW}]: ${NC}"
     read BUILD_FILE_NAME
     if [[ $BUILD_FILE_NAME = '' ]]; then
-      BUILD_FILE_NAME='AOSiP*.zip'
+      BUILD_FILE_NAME='Derp*.zip'
     fi
     echo -en "${YELLOW}Enter ADB push destination folder [${BLUE}Flash/Derp${YELLOW}]: ${NC}"
     read ADB_DEST_FOLDER
@@ -242,12 +295,17 @@ while [[ $# > 0 ]]; do
     if [[ $UNHANDLED_PATH = '' ]]; then
       UNHANDLED_PATH='~/Desktop'
     fi
-    echo -en "${YELLOW}Automatically remove build file? y/[${BLUE}n${YELLOW}]: ${NC}"
+    if [[ $UNHANDLED_PATH = 'c' ]]; then
+      UNHANDLED_PATH=''
+    fi
+    echo -en "${YELLOW}Automatically remove build file? y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
     read AUTO_RM_BUILD
     if [[ $AUTO_RM_BUILD = 'y' ]]; then
       AUTO_RM_BUILD=1
-    else
+    elif [[ $AUTO_RM_BUILD = 'N' ]]; then
       AUTO_RM_BUILD=0
+    else
+      AUTO_RM_BUILD=2
     fi
     echo -en "${YELLOW}Automatically reboot (to and from recovery)? y/[${BLUE}n${YELLOW}]: ${NC}"
     read AUTO_REBOOT
@@ -256,11 +314,8 @@ while [[ $# > 0 ]]; do
     else
       AUTO_REBOOT=0
     fi
-    echo -en "${YELLOW}Set TWRP decryption pin (0 to disable) [${BLUE}0${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Set TWRP decryption pin (0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
     read TWRP_PIN
-    if [[ $TWRP_PIN = '' ]]; then
-      TWRP_PIN=0
-    fi
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isWriteConf
@@ -275,7 +330,7 @@ while [[ $# > 0 ]]; do
     fi
     echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isExit
-    if [[ $isExit != 'n' ]]; then
+    if [[ $isExit == 'n' ]]; then
       exit 0
     fi
     shift
@@ -355,7 +410,7 @@ while [[ $# > 0 ]]; do
     fi
     configFile=$2
     echo -e "${GREEN}Using one-time config file: ${BLUE}${configFile}${NC}"
-    source $configFile || (echo -e "${RED}ERROR! No such file${NC}"; exit 2)
+    load_config $configFile
     shift 2
     ;;
     -*|--*=) # unsupported flags
@@ -479,8 +534,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     done
     if [[ $isPushed == 0 ]]; then
       if [[ $AUTO_REBOOT == 0 ]]; then
-        echo -en "${YELLOW}Flash now? y/[n]: ${NC}"
+        echo -en "${YELLOW}Flash now? y/[n]/A(lways): ${NC}"
         read isFlash
+        if [[ $isFlash == 'A' ]]; then
+          config_write "AUTO_REBOOT" 1 $configFile
+          isFlash='y'
+        fi
       else
         isFlash='y'
       fi
@@ -492,7 +551,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           adb_wait 'recovery' 3
           isDecrypted=0
           echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_PIN != 'c' ]]; then
+          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]]; then
             adb_reset
             echo -e "${GREEN}Trying decryption with provided pin${NC}"
             adb shell twrp decrypt $TWRP_PIN
@@ -506,7 +565,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
               echo -e "${RED}Data decryption failed. Please try manually${NC}"
             fi
           fi
-          if [[ $TWRP_PIN != 'c' ]] && [[ $isDecrypted != 1 ]]; then
+          if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]]; then
             echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
             read -n1 temp
             echo
@@ -584,7 +643,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           tg_send "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
         fi
       fi
-      if [[ $UPLOAD_PATH != 'c' ]] && [[ $FILE_MANAGER_CMD != 'c' ]]; then
+      if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
         eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
         disown
       fi
@@ -596,11 +655,20 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # remove original build file
   if [[ $buildH == 1 ]]; then
-    if [[ $AUTO_RM_BUILD != 1 ]]; then
-      echo -en "${YELLOW}Remove original build file? [y]/n: ${NC}"
+    if [[ $AUTO_RM_BUILD == 2 ]]; then
+      echo -en "${YELLOW}Remove original build file? [y]/n/A(lways)/N(ever): ${NC}"
       read isRM
-    else
+      if [[ $isRM == 'A' ]]; then
+        config_write "AUTO_RM_BUILD" 1 $configFile
+        isRM='y'
+      elif [[ $isRM == 'N' ]]; then
+        config_write "AUTO_RM_BUILD" 0 $configFile
+        isRM='n'
+      fi
+    elif [[ $AUTO_RM_BUILD == 1 ]]; then
       isRM='y'
+    else
+      isRM='n'
     fi
     if [[ $isRM != 'n' ]]; then
       eval "rm ${PATH_TO_BUILD_FILE}"
@@ -610,10 +678,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
   fi
   # Should only reach here if not handled yet
-  if [[ $UNHANDLED_PATH != 'c' ]]; then
+  if [[ $UNHANDLED_PATH != '' ]]; then
     eval "mv ${PATH_TO_BUILD_FILE} ${UNHANDLED_PATH}/"
     eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
-    if [[ $FILE_MANAGER_CMD != 'c' ]]; then
+    if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
     fi
     disown
