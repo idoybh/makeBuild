@@ -22,75 +22,83 @@ You can start the script with the following flags:
 **Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together.
 
 ## build.conf
-The default configuration file of the script.
-Can be changed per run with the flag `--config`.
+The default configuration file of the script.  
+Can be changed per run with the flag `--config`.  
+**Note** Must have at least one space before `=` and everything afterwards (incl spaces) will be used as the value.  
 
 ##### WAS_INIT
-Just a flag to show weather the **-i** flag was used before.
-Set this to any other value than 0 to dismiss the warning.
-Set to `'0'` by default
+Just a flag to show weather the **-i** flag was used before.  
+Set this to any other value than 0 to dismiss the warning.  
+Set to `0` by default
 ##### CLEAN_CMD
-Set this to whatever command you use to make a clean build.
-Set to `'make clobber'` by default.
+Set this to whatever command you use to make a clean build.  
+Set to `make clobber` by default.
 ##### TARGET_CHOOSE_CMD
-Set this to whatever command you use to "lunch" / select the product to build prior to the build command.
-Set to `'lunch aosip_dumpling-userdebug'` by default.
+Set this to whatever command you use to "lunch" / select the product to build prior to the build command.  
+Set to `lunch derp_dumpling-userdebug` by default.
 ##### BUILD_CMD
-Set this to whatever command you use to initiate the build process. It will be run inside the source directory.
-Set to `'mka kronic'` by default
+Set this to whatever command you use to initiate the build process. It will be run inside the source directory.  
+Set to `mka kronic` by default
 ##### FILE_MANAGER_CMD
-Set this to whatever command you use to lunch your file manager.
-It is usually just the name of your file manager and depends on your linux distribution.
-Setting this to `'c'` will disable launching file manager across the script. Usefull for GClod or SSH for example.
-Set to `'dolphin'` by default (KDE's default file manager)
+Set this to whatever command you use to lunch your file manager.  
+It is usually just the name of your file manager and depends on your linux distribution.  
+Setting this to blank (no value) will disable launching file manager across the script. Usefull for GClod or SSH for example.  
+Set to `dolphin` by default (KDE's default file manager)
 ##### UPLOAD_CMD
-Set this to whatever command you use to upload you file.
-Set to `'rclone copy -v'` by default.
+Set this to whatever command you use to upload you file.  
+Set to `rclone copy -v` by default.
 ##### UPLOAD_LINK_CMD
-Set this to whatever command you use to get download links for uploaded files.
-Set to `'rclone link'` by default.
+Set this to whatever command you use to get download links for uploaded files.  
+Set to `rclone link` by default.
 ##### UPLOAD_DEST
-Set this to the upload destination **remote** folder.
-It will be added at the very end of the upload command, after the local built file path.
-Set to `'GDrive:/builds'` by default - just to provide an example for rclone.
+Set this to the upload destination **remote** folder.  
+It will be added at the very end of the upload command, after the local built file path.  
+Set to `GDrive:/builds` by default - just to provide an example for rclone.
 ##### UPLOAD_PATH
-Set this to a **local** folder showing your remote files.
-This folder will be openned with your chosen file manager after the built file has been uploaded.
-You can also set this to `'c'` to disable this function across the script.
-**Please notice:** only set this to an absolute path. It will not be checked / converted to allow you choosing whatever you want.
-Set to `'gdrive:/idoybh2@gmail.com/builds/'` by default. Again, just to provide an example.
+Set this to a **local** folder showing your remote files.  
+This folder will be openned with your chosen file manager after the built file has been uploaded.  
+You can also set this to blank (no value) to disable this function across the script.  
+**Please notice:** only set this to an absolute path. It will ***not*** be checked nor converted - to allow you choosing whatever you want.  
+Set to `gdrive:/idoybh2@gmail.com/builds/` by default. Again, just to provide an example.
 ##### SOURCE_PATH
 Set this to either a relative or an absolute path that points to your root source directory.
-The script will CD into this directory for the build process.
-Note that if the first char is `.` it will be replaced by the path of the script - thus allowing you to use a relative path.
-Generally I would recommend just clonning this repo to your root source folder and keep this as is.
-**Please do not use `..` as the first chars**. Set to `'.'` by default.
+The script will CD into this directory for the build process.  
+Note that if the first char is `.` it will be replaced by the path of the script - thus allowing you to use a relative path.  
+Generally I would recommend just clonning this repo to your root source folder and keep this as is.  
+**Please do not use `..` as the first chars**. Set to `.` by default.
 ##### BUILD_PRODUCT_NAME
-This should be set to the product name in `out/target/product/`. Usually is your device's codename.
-Set to `'dumpling'` by default.
+This should be set to the product name in `out/target/product/`. Usually is your device's codename.  
+Set to `dumpling` by default.
 ##### BUILD_FILE_NAME
-Set this to the built file name. Because it usually changes with the date you should use `'*.zip'` at the end of it and the
-constant part of the name at the beginning. See default value `'AOSiP*.zip'` as an example.
+Set this to the built file name. Because it usually changes with the date you should use `*.zip` at the end of it and the
+constant part of the name at the beginning. See default value `Derp*.zip` as an example.
 ##### ADB_DEST_FOLDER
-Set this to the folder you would like to adb push into - **relative to internal storage**
-Please note the script automatically detects if you're booted / in recovery.
-**Please do not start this path with an '/'**. Set to `'Flash/Derp'` by default.
+Set this to the folder you would like to adb push into - **relative to internal storage**  
+Please note the script automatically detects if you're booted / in recovery.  
+**Please do not start this path with an '/'**. Set to `Flash/Derp` by default.
 ##### UNHANDLED_PATH
-Set this to the **local** path you want the script to move the built file to if no handling flags selected.
-You can either use a relative or an absolute path. Same notes of *SOURCE_PATH* apply here.
-You can also set this to `'c'` to disable this function.
+Set this to the **local** path you want the script to move the built file to if no handling flags selected.  
+You can either use a relative or an absolute path. Same notes of *SOURCE_PATH* apply here.  
+You can also set this to blank (no value) to disable this function.
 ##### AUTO_RM_BUILD
-Set this to `1` to skip asking wether to remove original build file.
-Set to `0` by default.
+Controls wether to automatically remove original build files (after handled)
+Possible values are:
+* `0` to never remove the original build file (w/o asking).
+* `1` to always remove the original build file (w/o asking).
+* `2` to always ask wether to remove the original build file (will prompt to change the default).  
+
+Set to `2` by default.
 ##### AUTO_REBOOT
-Set this to `1` to skip waiting for a keypress on each reboot.
-This will make the script automatically reboot from and to recovery.
+Set this to `1` to skip waiting for a keypress on each reboot.  
+This will make the script automatically reboot from and to recovery.  
 Set to `0` by default.
 ##### TWRP_PIN
-Set this to the decryption pin used to decrypt data in TWRP.
-Setting this to `0` will make the script wait for your manual decryption.
-Setting this to `c` will skip waiting for decryption altogether (for decrypted devices).
-For more information regarding patterns refer to: https://twrp.me/faq/openrecoveryscript.html
+Set this to the decryption pin used to decrypt data in TWRP.  
+Other possible values are:
+* Blank (no value) - will make the script wait for your manual decryption.  
+* `0` - will skip waiting for decryption altogether (for decrypted devices).
+
+For more information regarding patterns and more refer to: https://twrp.me/faq/openrecoveryscript.html  
 Set to `0` by default.
 
 ## Output color coding
@@ -98,5 +106,5 @@ Set to `0` by default.
 * *Green* and *Blue* for info
 * *Yellow* for requested input
 
-Thank you for reading.
+Thank you for reading.  
 Enjoy the script!
