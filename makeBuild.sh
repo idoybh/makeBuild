@@ -145,7 +145,7 @@ pre_build()
 {
   source "${SOURCE_PATH}/build/envsetup.sh"
   if [[ $isClean == 1 ]]; then
-    echo -e "${GREEN}Cleanning build${NC}"
+    echo -e "${GREEN}Cleaning build${NC}"
     eval $CLEAN_CMD
   fi
   eval $TARGET_CHOOSE_CMD # target
