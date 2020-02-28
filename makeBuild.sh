@@ -461,9 +461,8 @@ sleep 3
 cd $SOURCE_PATH || echo -e "${RED}ERROR! Invalid source path ${BLUE}${SOURCE_PATH}${NC}" # changing dir to source path
 
 # build
-pre_build
-
 if [[ $isDry == 0 ]]; then
+  pre_build
   eval $BUILD_CMD # build
   # no commands allowed in here!
   buildRes=$? # save result (exit code)
@@ -488,7 +487,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     exit 1
   fi
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
-  tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
+  if [[ $isDry == 0 ]]; then
+    tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
+  fi
   # push build
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
