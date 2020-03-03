@@ -545,6 +545,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       fi
       # flash build
       if [[ $isFlash == 'y' ]]; then
+        tg_send "Flashing build"
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
           adb reboot recovery
