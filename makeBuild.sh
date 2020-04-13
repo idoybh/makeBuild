@@ -58,6 +58,7 @@ print_help()
   echo -e "${BLUE}-c${NC} for a clean build"
   echo -e "${BLUE}-s${NC} to disbale telegram-send bot"
   echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
+  echo -e "${BLUE}--keep-file${NC} to skip removal of original build file"
   echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
   echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
   echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
@@ -210,6 +211,7 @@ isPush=0
 isClean=0
 isSilent=0
 isDry=0
+isKeep=0
 powerOpt=0
 flagConflict=0
 while [[ $# > 0 ]]; do
@@ -357,6 +359,11 @@ while [[ $# > 0 ]]; do
     -d) # dry
     echo -e "${GREEN}Dry run!${NC}"
     isDry=1
+    shift
+    ;;
+    "--keep-file") # keep original build file
+    echo -e "${GREEN}Keeping original build file!${NC}"
+    isKeep=1
     shift
     ;;
     "--power") #power operations
@@ -672,7 +679,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     else
       isRM='n'
     fi
-    if [[ $isRM != 'n' ]]; then
+    if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
       eval "rm ${PATH_TO_BUILD_FILE}"
       eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
       echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
@@ -680,7 +687,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
   fi
   # Should only reach here if not handled yet
-  if [[ $UNHANDLED_PATH != '' ]]; then
+  if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
     eval "mv ${PATH_TO_BUILD_FILE} ${UNHANDLED_PATH}/"
     eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
     if [[ $FILE_MANAGER_CMD != '' ]]; then
