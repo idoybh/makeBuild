@@ -461,7 +461,7 @@ elif [[ ${UNHANDLED_PATH:0:1} = '.' ]]; then
   UNHANDLED_PATH=${UNHANDLED_PATH#"."}
   UNHANDLED_PATH="${PWD}/${UNHANDLED_PATH}"
 elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] &&
-    [[ $UNHANDLED_PATH != 'c' ]]; then
+    [[ $UNHANDLED_PATH != '' ]]; then
   echo -en "${RED}ERROR! Invalid source path in config. "
   echo -en "Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}' "
   echo -e "or be exactly '${NC}c${RED}'${NC}"
@@ -480,7 +480,7 @@ echo -e "${GREEN}Source dir:${BLUE} ${SOURCE_PATH}${NC}"
 echo -e "${GREEN}Product name:${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
 echo -e "${GREEN}Upload destination:${BLUE} ${UPLOAD_DEST}${NC}"
 echo -e "${GREEN}ADB push destination:${BLUE} ${ADB_DEST_FOLDER}${NC}"
-if [[ $UNHANDLED_PATH != 'c' ]]; then
+if [[ $UNHANDLED_PATH != '' ]]; then
   echo -e "${GREEN}Move build destination:${BLUE} ${UNHANDLED_PATH}${NC}"
 fi
 sleep 3
