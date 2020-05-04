@@ -65,7 +65,8 @@ print_help()
   echo -e "${BLUE}--product [ARG]${NC} to change target product name"
   echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
   echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
-  echo -e "${GREEN}For more help visit: ${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
+  echo -en "${GREEN}For more help visit: "
+  echo -e "${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
 }
 
 # returns a property value from the config file
@@ -230,7 +231,8 @@ while [[ $# > 0 ]]; do
     if [[ $CLEAN_CMD = '' ]]; then
       CLEAN_CMD='make clobber'
     fi
-    echo -en "${YELLOW}Enter target choose command [${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter target choose command "
+    echo -en "[${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
     read TARGET_CHOOSE_CMD
     if [[ $TARGET_CHOOSE_CMD = '' ]]; then
       TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
@@ -240,7 +242,8 @@ while [[ $# > 0 ]]; do
     if [[ $BUILD_CMD = '' ]]; then
       BUILD_CMD='mka kronic'
     fi
-    echo -en "${YELLOW}Enter file manager command ('c' for none) [${BLUE}dolphin${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter file manager command "
+    echo -en "('c' for none) [${BLUE}dolphin${YELLOW}]: ${NC}"
     read FILE_MANAGER_CMD
     if [[ $FILE_MANAGER_CMD = '' ]]; then
       FILE_MANAGER_CMD='dolphin'
@@ -260,12 +263,14 @@ while [[ $# > 0 ]]; do
     fi
     echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
     read TG_SEND_PRIOR_CMD
-    echo -en "${YELLOW}Enter upload destination (remote) [${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter upload destination (remote) "
+    echo -en "[${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
     read UPLOAD_DEST
     if [[ $UPLOAD_DEST = '' ]]; then
       UPLOAD_DEST='GDrive:/builds'
     fi
-    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) [${BLUE}gdrive:/idoybh2/builds/${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) "
+    echo -en "[${BLUE}gdrive:/idoybh2/builds/${YELLOW}]: ${NC}"
     read UPLOAD_PATH
     if [[ $UPLOAD_PATH = '' ]]; then
       UPLOAD_PATH='gdrive:/idoybh2/builds/'
@@ -288,12 +293,14 @@ while [[ $# > 0 ]]; do
     if [[ $BUILD_FILE_NAME = '' ]]; then
       BUILD_FILE_NAME='Derp*.zip'
     fi
-    echo -en "${YELLOW}Enter ADB push destination folder [${BLUE}Flash/Derp${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter ADB push destination folder "
+    echo -en "[${BLUE}Flash/Derp${YELLOW}]: ${NC}"
     read ADB_DEST_FOLDER
     if [[ $ADB_DEST_FOLDER = '' ]]; then
       ADB_DEST_FOLDER='Flash/Derp'
     fi
-    echo -en "${YELLOW}Enter default move path ('c' for none) [${BLUE}~/Desktop${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Enter default move path ('c' for none) "
+    echo -en "[${BLUE}~/Desktop${YELLOW}]: ${NC}"
     read UNHANDLED_PATH
     if [[ $UNHANDLED_PATH = '' ]]; then
       UNHANDLED_PATH='~/Desktop'
@@ -301,7 +308,8 @@ while [[ $# > 0 ]]; do
     if [[ $UNHANDLED_PATH = 'c' ]]; then
       UNHANDLED_PATH=''
     fi
-    echo -en "${YELLOW}Automatically remove build file? y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
+    echo -en "${YELLOW}Automatically remove build file? "
+    echo -en "y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
     read AUTO_RM_BUILD
     if [[ $AUTO_RM_BUILD = 'y' ]]; then
       AUTO_RM_BUILD=1
@@ -310,7 +318,8 @@ while [[ $# > 0 ]]; do
     else
       AUTO_RM_BUILD=2
     fi
-    echo -en "${YELLOW}Automatically reboot (to and from recovery)? y/[${BLUE}n${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Automatically reboot (to and from recovery)? "
+    echo -en "y/[${BLUE}n${YELLOW}]: ${NC}"
     read AUTO_REBOOT
     if [[ $AUTO_REBOOT = 'y' ]]; then
       AUTO_REBOOT=1
@@ -319,7 +328,8 @@ while [[ $# > 0 ]]; do
     fi
     echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
     read UPLOAD_DONE_MSG
-    echo -en "${YELLOW}Set TWRP decryption pin (0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
+    echo -en "${YELLOW}Set TWRP decryption pin "
+    echo -en "(0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
     read TWRP_PIN
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
     echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
@@ -373,10 +383,12 @@ while [[ $# > 0 ]]; do
     powerOpt=$2
     echo
     if [[ $powerOpt == "off" ]]; then
-      echo -e "${GREEN}Script will wait ${RED}1 minute${GREEN} and than perform a ${RED}power off${NC}"
+      echo -en "${GREEN}Script will wait ${RED}1 minute${GREEN} "
+      echo -e "and than perform a ${RED}power off${NC}"
       shift 2
     elif [[ $powerOpt == "reboot" ]]; then
-      echo -e "${GREEN}Script will wait ${RED}1 minute${GREEN} and than perform a ${RED}reboot${NC}"
+      echo -en "${GREEN}Script will wait ${RED}1 minute${GREEN} "
+      echo -e "and than perform a ${RED}reboot${NC}"
       shift 2
     else
       echo -e "${GREEN}ERROR! Power option not recognized.${NC}"
@@ -439,7 +451,8 @@ elif [[ ${SOURCE_PATH:0:1} = '.' ]]; then
   SOURCE_PATH=${SOURCE_PATH#"."}
   SOURCE_PATH="${PWD}/${SOURCE_PATH}"
 elif [[ ${SOURCE_PATH:0:1} != '/' ]] && [[ ${SOURCE_PATH:0:1} != '~' ]]; then
-  echo -e "${RED}ERROR! Invalid source path in config. Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}'${NC}"
+  echo -en "${RED}ERROR! Invalid source path in config. "
+  echo -e "Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}'${NC}"
   exit 2
 fi
 if [[ $UNHANDLED_PATH = '.' ]]; then # converting UNHANDLED_PATH
@@ -447,14 +460,18 @@ if [[ $UNHANDLED_PATH = '.' ]]; then # converting UNHANDLED_PATH
 elif [[ ${UNHANDLED_PATH:0:1} = '.' ]]; then
   UNHANDLED_PATH=${UNHANDLED_PATH#"."}
   UNHANDLED_PATH="${PWD}/${UNHANDLED_PATH}"
-elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] && [[ $UNHANDLED_PATH != 'c' ]]; then
-  echo -e "${RED}ERROR! Invalid source path in config. Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}' or be exactly '${NC}c${RED}'${NC}"
+elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] &&
+    [[ $UNHANDLED_PATH != 'c' ]]; then
+  echo -en "${RED}ERROR! Invalid source path in config. "
+  echo -en "Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}' "
+  echo -e "or be exactly '${NC}c${RED}'${NC}"
   exit 2
 fi
 
 if [[ $WAS_INIT == 0 ]]; then # show not configured warning
   echo -e "${RED}WARNING! Script configs were never initialized!${NC}"
-  echo -e "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} in ${BLUE}build.config${GREEN} to hide this warning${NC}"
+  echo -en "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} "
+  echo -e "in ${BLUE}build.config${GREEN} to hide this warning${NC}"
   echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
   sleep 3
 fi
@@ -468,7 +485,9 @@ if [[ $UNHANDLED_PATH != 'c' ]]; then
 fi
 sleep 3
 
-cd $SOURCE_PATH || echo -e "${RED}ERROR! Invalid source path ${BLUE}${SOURCE_PATH}${NC}" # changing dir to source path
+# changing dir to source path
+cd $SOURCE_PATH ||
+    echo -e "${RED}ERROR! Invalid source path ${BLUE}${SOURCE_PATH}${NC}"
 
 # build
 if [[ $isDry == 0 ]]; then
@@ -486,14 +505,18 @@ get_time
 buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
   # Count build files:
-  NOFiles=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /`
+  NOFiles=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /)
   if [[ $NOFiles > 1 ]]; then
     echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
-    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}"`
+    PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}")
   elif [[ $NOFiles == 1 ]]; then
-    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" -maxdepth 1 -type f -name "${BUILD_FILE_NAME}"`
+    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}"`
   else
-    echo -e "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
+    echo -en "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
+    echo -e "in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
     exit 1
   fi
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
@@ -646,9 +669,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         if [[ $isFileLinkFailed == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
           if [[ $isMD5LinkFailed == 0 ]]; then
-            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
+            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
           else
-            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
           fi
           if [[ $UPLOAD_DONE_MSG != '' ]]; then
             tg_send "${UPLOAD_DONE_MSG}"
