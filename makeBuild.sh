@@ -114,6 +114,7 @@ rewrite_config()
   config_write "UNHANDLED_PATH" "${UNHANDLED_PATH}" $confPath
   config_write "AUTO_RM_BUILD" "${AUTO_RM_BUILD}" $confPath
   config_write "AUTO_REBOOT" "${AUTO_REBOOT}" $confPath
+  config_write "UPLOAD_DONE_MSG" "${UPLOAD_DONE_MSG}" $confPath
   config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
 }
 
@@ -316,6 +317,8 @@ while [[ $# > 0 ]]; do
     else
       AUTO_REBOOT=0
     fi
+    echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
+    read UPLOAD_DONE_MSG
     echo -en "${YELLOW}Set TWRP decryption pin (0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
     read TWRP_PIN
     echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
@@ -646,6 +649,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
           else
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+          fi
+          if [[ $UPLOAD_DONE_MSG != '' ]]; then
+            tg_send "${UPLOAD_DONE_MSG}"
           fi
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"

@@ -93,6 +93,10 @@ Set to `2` by default.
 Set this to `1` to skip waiting for a keypress on each reboot.  
 This will make the script automatically reboot from and to recovery.  
 Set to `0` by default.
+##### UPLOAD_DONE_MSG
+Set this to an extra message you want to send when upload is done.  
+A good option may be a tag list or a link to changelog.  
+Set to nothing to disable. Disabled by default.
 ##### TWRP_PIN
 Set this to the decryption pin used to decrypt data in TWRP.  
 Other possible values are:
