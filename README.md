@@ -37,6 +37,9 @@ Set to `make clobber` by default.
 ##### TARGET_CHOOSE_CMD
 Set this to whatever command you use to "lunch" / select the product to build prior to the build command.  
 Set to `lunch derp_dumpling-userdebug` by default.
+##### BUILD_TYPE_CMD
+Set this to whatever command you use to select a build type. Will be run after lunch.  
+Set to balnk to diable. Set to blank by default
 ##### BUILD_CMD
 Set this to whatever command you use to initiate the build process. It will be run inside the source directory.  
 Set to `mka kronic` by default

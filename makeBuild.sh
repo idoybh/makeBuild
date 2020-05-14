@@ -101,6 +101,7 @@ rewrite_config()
   config_write "WAS_INIT" 1 $confPath
   config_write "CLEAN_CMD" "${CLEAN_CMD}" $confPath
   config_write "TARGET_CHOOSE_CMD" "${TARGET_CHOOSE_CMD}" $confPath
+  config_write "BUILD_TYPE_CMD" "${BUILD_TYPE_CMD}" $confPath
   config_write "BUILD_CMD" "${BUILD_CMD}" $confPath
   config_write "FILE_MANAGER_CMD" "${FILE_MANAGER_CMD}" $confPath
   config_write "UPLOAD_CMD" "${UPLOAD_CMD}" $confPath
@@ -152,6 +153,9 @@ pre_build()
     eval $CLEAN_CMD
   fi
   eval $TARGET_CHOOSE_CMD # target
+  if [[ $BUILD_TYPE_CMD != '' ]]; then
+    eval $BUILD_TYPE_CMD # build type
+  fi
   tg_send "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
   start_time=$(date +"%s")
 }
@@ -237,6 +241,9 @@ while [[ $# > 0 ]]; do
     if [[ $TARGET_CHOOSE_CMD = '' ]]; then
       TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
     fi
+    echo -en "${YELLOW}Enter build type command "
+    echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
+    read BUILD_TYPE_CMD
     echo -en "${YELLOW}Enter build command [${BLUE}mka kronic${YELLOW}]: ${NC}"
     read BUILD_CMD
     if [[ $BUILD_CMD = '' ]]; then
