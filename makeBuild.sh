@@ -62,6 +62,7 @@ print_help()
   echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
   echo -e "   ${BLUE}Suppoeted ARG(s): ${NC} off, reboot"
   echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
+  echo -e "${BLUE}--type [CMD]${NC} to change build type command"
   echo -e "${BLUE}--product [ARG]${NC} to change target product name"
   echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
   echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
@@ -426,6 +427,12 @@ while [[ $# > 0 ]]; do
     fi
     BUILD_PRODUCT_NAME=$2
     echo -e "${GREEN}One-time poduct name: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
+    echo
+    shift 2
+    ;;
+    "--type") # diff build type command
+    BUILD_TYPE_CMD=$2
+    echo -e "${GREEN}One-time build type: ${BLUE}${BUILD_TYPE_CMD}${NC}"
     echo
     shift 2
     ;;

@@ -17,6 +17,7 @@ You can start the script with the following flags:
 * **--power _[ARG]_** to power off or reboot if build successful
   * _[ARG]_ should be: `off` or `reboot`
 * **--choose _[CMD]_** to change target choose command (see [here](#target_choose_cmd)) temporarily
+* **--type _[CMD]_** to change build type command (see [here](#build_type_cmd)) temporarily
 * **--product _[ARG]_** to change build product name (see [here](#build_product_name)) temporarily
 * **--config _[FILE]_** to change the config file temporarily
 
