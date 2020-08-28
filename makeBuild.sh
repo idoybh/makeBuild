@@ -559,7 +559,6 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         else
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
-          isPushed='0'
           echo
         fi
       elif [[ $isOn == 0 ]]; then
