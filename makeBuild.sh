@@ -540,10 +540,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # push build
   if [[ $isPush == 1 ]]; then
     echo -e "${GREEN}Pushing...${NC}"
-    isOn='1' # Device is booted (reverse logic)
-    isRec='1' # Device is on recovery mode (reverse logic)
-    isPushed='1' # Weater the push went fine (reverse logic)
-    while [[ $isOn != '0' ]] && [[ $isRec != '0' ]] && [[ $isPushed != '0' ]]; do
+    isOn=1 # Device is booted (reverse logic)
+    isRec=1 # Device is on recovery mode (reverse logic)
+    isPushed=1 # Weater the push went fine (reverse logic)
+    while [[ $isOn != 0 ]] && [[ $isRec != 0 ]] && [[ $isPushed != 0 ]]; do
       adb_reset
       adb devices | grep -w 'device' &> /dev/null
       isOn=$?
@@ -557,6 +557,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
+          isPushed=1
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
           echo
@@ -569,6 +570,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
+          isPushed=1
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
           echo
