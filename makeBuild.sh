@@ -767,4 +767,4 @@ if [[ $isSilent == 0 ]]; then
     tg_send "Build was canceled after <code>${buildTime}</code>."
   fi
 fi
-exit $?
+exit $buildRes
