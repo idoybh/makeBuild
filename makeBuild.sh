@@ -78,7 +78,7 @@ config_read()
   rProp=$1
   cFile=$2
   lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
-  echo $(sed "${lineNO}q;d" $cFile | awk -F  "=" '{print $NF}')
+  echo $(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)
 }
 
 # sets a property vlaue to the config file
