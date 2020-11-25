@@ -20,6 +20,7 @@ You can start the script with the following flags:
 * **--type _[CMD]_** to change build type command (see [here](#build_type_cmd)) temporarily
 * **--product _[ARG]_** to change build product name (see [here](#build_product_name)) temporarily
 * **--config _[FILE]_** to change the config file temporarily
+* **--installclean** to run make installclean before the build
 
 **Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together.
 

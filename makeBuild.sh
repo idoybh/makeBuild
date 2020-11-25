@@ -65,6 +65,7 @@ print_help()
   echo -e "${BLUE}--type [CMD]${NC} to change build type command"
   echo -e "${BLUE}--product [ARG]${NC} to change target product name"
   echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
+  echo -e "${BLUE}--installclean${NC} to run ${BLUE}make installclean${NC} before the build"
   echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
   echo -en "${GREEN}For more help visit: "
   echo -e "${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
@@ -154,6 +155,9 @@ pre_build()
     eval $CLEAN_CMD
   fi
   eval $TARGET_CHOOSE_CMD # target
+  if [[ $installClean == 1 ]]; then
+    make installclean
+  fi
   if [[ $BUILD_TYPE_CMD != '' ]]; then
     eval $BUILD_TYPE_CMD # build type
   fi
@@ -220,6 +224,7 @@ isSilent=0
 isDry=0
 isKeep=0
 powerOpt=0
+intsallClean=0
 flagConflict=0
 while [[ $# > 0 ]]; do
   case "$1" in
@@ -448,6 +453,11 @@ while [[ $# > 0 ]]; do
     echo -e "${GREEN}Using one-time config file: ${BLUE}${configFile}${NC}"
     load_config $configFile
     shift 2
+    ;;
+    "--installclean") # make installclean
+    installClean=1
+    echo -e "${GREEN}make installclean${NC}"
+    shift
     ;;
     -*|--*=) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
