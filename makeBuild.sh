@@ -567,6 +567,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
+          isOn=1
+          isRec=1
           isPushed=1
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
@@ -580,6 +582,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
           buildH=1
         else
+          isOn=1
+          isRec=1
           isPushed=1
           echo -en "${RED}Push error (see output). Press any key to try again${NC}"
           read -n1 temp
