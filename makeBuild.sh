@@ -664,7 +664,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then
-    tg_send "Uploading build"
+    tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> build"
     echo -e "${GREEN}Uploading...${NC}"
     isUploaded=0
     if [[ -f $PATH_TO_BUILD_FILE ]]; then
