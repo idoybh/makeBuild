@@ -513,7 +513,16 @@ echo -e "${GREEN}ADB push destination:${BLUE} ${ADB_DEST_FOLDER}${NC}"
 if [[ $UNHANDLED_PATH != '' ]]; then
   echo -e "${GREEN}Move build destination:${BLUE} ${UNHANDLED_PATH}${NC}"
 fi
-sleep 3
+echo
+echo -en "${YELLOW}Waiting for ${BLUE}5${NC} ${YELLOW}seconds${NC}"
+for (( i = 5; i >= 1; i-- )); do
+  echo -e '\e[1A\e[K'
+  echo -en "${YELLOW}Waiting for ${BLUE}${i}${NC} ${YELLOW}seconds${NC}"
+  sleep 1
+done
+echo -e '\e[1A\e[K'
+echo -e "${GREEN}Starting build       ${NC}"
+sleep 1
 
 # changing dir to source path
 cd $SOURCE_PATH ||
