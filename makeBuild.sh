@@ -146,6 +146,133 @@ load_config()
   fi
 }
 
+# writes a new build.conf file
+init_conf()
+{
+  echo -e "${GREEN}Initializing settings${NC}"
+  echo -e "${GREEN}Default values are inside [] just press enter to apply them${NC}"
+  echo -en "${YELLOW}Enter clean command [${BLUE}make clobber${YELLOW}]: ${NC}"
+  read CLEAN_CMD
+  if [[ $CLEAN_CMD = '' ]]; then
+    CLEAN_CMD='make clobber'
+  fi
+  echo -en "${YELLOW}Enter target choose command "
+  echo -en "[${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
+  read TARGET_CHOOSE_CMD
+  if [[ $TARGET_CHOOSE_CMD = '' ]]; then
+    TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
+  fi
+  echo -en "${YELLOW}Enter build type command "
+  echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
+  read BUILD_TYPE_CMD
+  echo -en "${YELLOW}Enter build command [${BLUE}mka kronic${YELLOW}]: ${NC}"
+  read BUILD_CMD
+  if [[ $BUILD_CMD = '' ]]; then
+    BUILD_CMD='mka kronic'
+  fi
+  echo -en "${YELLOW}Enter file manager command "
+  echo -en "('c' for none) [${BLUE}dolphin${YELLOW}]: ${NC}"
+  read FILE_MANAGER_CMD
+  if [[ $FILE_MANAGER_CMD = '' ]]; then
+    FILE_MANAGER_CMD='dolphin'
+  fi
+  if [[ $FILE_MANAGER_CMD = 'c' ]]; then
+    FILE_MANAGER_CMD=''
+  fi
+  echo -en "${YELLOW}Enter upload command [${BLUE}rclone copy -v${YELLOW}]: ${NC}"
+  read UPLOAD_CMD
+  if [[ $UPLOAD_CMD = '' ]]; then
+    UPLOAD_CMD='rclone copy -v'
+  fi
+  echo -en "${YELLOW}Enter upload link command [${BLUE}rclone link${YELLOW}]: ${NC}"
+  read UPLOAD_LINK_CMD
+  if [[ $UPLOAD_LINK_CMD = '' ]]; then
+    UPLOAD_LINK_CMD='rclone link'
+  fi
+  echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
+  read TG_SEND_PRIOR_CMD
+  echo -en "${YELLOW}Enter upload destination (remote) "
+  echo -en "[${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
+  read UPLOAD_DEST
+  if [[ $UPLOAD_DEST = '' ]]; then
+    UPLOAD_DEST='GDrive:/builds'
+  fi
+  echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) "
+  echo -en "[${BLUE}gdrive:/idoybh2/builds/${YELLOW}]: ${NC}"
+  read UPLOAD_PATH
+  if [[ $UPLOAD_PATH = '' ]]; then
+    UPLOAD_PATH='gdrive:/idoybh2/builds/'
+  fi
+  if [[ $UPLOAD_PATH = 'c' ]]; then
+    UPLOAD_PATH=''
+  fi
+  echo -en "${YELLOW}Enter source path [${BLUE}.${YELLOW}]: ${NC}"
+  read SOURCE_PATH
+  if [[ $SOURCE_PATH = '' ]]; then
+    SOURCE_PATH='.'
+  fi
+  echo -en "${YELLOW}Enter build product name [${BLUE}dumpling${YELLOW}]: ${NC}"
+  read BUILD_PRODUCT_NAME
+  if [[ $BUILD_PRODUCT_NAME = '' ]]; then
+    BUILD_PRODUCT_NAME='dumpling'
+  fi
+  echo -en "${YELLOW}Enter built zip file name [${BLUE}Derp*.zip${YELLOW}]: ${NC}"
+  read BUILD_FILE_NAME
+  if [[ $BUILD_FILE_NAME = '' ]]; then
+    BUILD_FILE_NAME='Derp*.zip'
+  fi
+  echo -en "${YELLOW}Enter ADB push destination folder "
+  echo -en "[${BLUE}Flash/Derp${YELLOW}]: ${NC}"
+  read ADB_DEST_FOLDER
+  if [[ $ADB_DEST_FOLDER = '' ]]; then
+    ADB_DEST_FOLDER='Flash/Derp'
+  fi
+  echo -en "${YELLOW}Enter default move path ('c' for none) "
+  echo -en "[${BLUE}~/Desktop${YELLOW}]: ${NC}"
+  read UNHANDLED_PATH
+  if [[ $UNHANDLED_PATH = '' ]]; then
+    UNHANDLED_PATH='~/Desktop'
+  fi
+  if [[ $UNHANDLED_PATH = 'c' ]]; then
+    UNHANDLED_PATH=''
+  fi
+  echo -en "${YELLOW}Automatically remove build file? "
+  echo -en "y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
+  read AUTO_RM_BUILD
+  if [[ $AUTO_RM_BUILD = 'y' ]]; then
+    AUTO_RM_BUILD=1
+  elif [[ $AUTO_RM_BUILD = 'N' ]]; then
+    AUTO_RM_BUILD=0
+  else
+    AUTO_RM_BUILD=2
+  fi
+  echo -en "${YELLOW}Automatically reboot (to and from recovery)? "
+  echo -en "y/[${BLUE}n${YELLOW}]: ${NC}"
+  read AUTO_REBOOT
+  if [[ $AUTO_REBOOT = 'y' ]]; then
+    AUTO_REBOOT=1
+  else
+    AUTO_REBOOT=0
+  fi
+  echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
+  read UPLOAD_DONE_MSG
+  echo -en "${YELLOW}Set TWRP decryption pin "
+  echo -en "(0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
+  read TWRP_PIN
+  echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
+  echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
+  read isWriteConf
+  if [[ $isWriteConf != 'n' ]]; then
+    echo -en "${YELLOW}Enter config file name [${BLUE}build.conf${YELLOW}]: ${NC}"
+    read confPath
+    if [[ $confPath == '' ]]; then
+      confPath="build.conf"
+    fi
+    echo -e "${GREEN}Rewriting file${NC}"
+    rewrite_config $confPath
+  fi
+}
+
 # performes required pre build operations
 pre_build()
 {
@@ -234,128 +361,7 @@ while [[ $# > 0 ]]; do
     exit 0
     ;;
     -i) # initialize (write a new build.conf)
-    echo -e "${GREEN}Initializing settings${NC}"
-    echo -e "${GREEN}Default values are inside [] just press enter to apply them${NC}"
-    echo -en "${YELLOW}Enter clean command [${BLUE}make clobber${YELLOW}]: ${NC}"
-    read CLEAN_CMD
-    if [[ $CLEAN_CMD = '' ]]; then
-      CLEAN_CMD='make clobber'
-    fi
-    echo -en "${YELLOW}Enter target choose command "
-    echo -en "[${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
-    read TARGET_CHOOSE_CMD
-    if [[ $TARGET_CHOOSE_CMD = '' ]]; then
-      TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
-    fi
-    echo -en "${YELLOW}Enter build type command "
-    echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
-    read BUILD_TYPE_CMD
-    echo -en "${YELLOW}Enter build command [${BLUE}mka kronic${YELLOW}]: ${NC}"
-    read BUILD_CMD
-    if [[ $BUILD_CMD = '' ]]; then
-      BUILD_CMD='mka kronic'
-    fi
-    echo -en "${YELLOW}Enter file manager command "
-    echo -en "('c' for none) [${BLUE}dolphin${YELLOW}]: ${NC}"
-    read FILE_MANAGER_CMD
-    if [[ $FILE_MANAGER_CMD = '' ]]; then
-      FILE_MANAGER_CMD='dolphin'
-    fi
-    if [[ $FILE_MANAGER_CMD = 'c' ]]; then
-      FILE_MANAGER_CMD=''
-    fi
-    echo -en "${YELLOW}Enter upload command [${BLUE}rclone copy -v${YELLOW}]: ${NC}"
-    read UPLOAD_CMD
-    if [[ $UPLOAD_CMD = '' ]]; then
-      UPLOAD_CMD='rclone copy -v'
-    fi
-    echo -en "${YELLOW}Enter upload link command [${BLUE}rclone link${YELLOW}]: ${NC}"
-    read UPLOAD_LINK_CMD
-    if [[ $UPLOAD_LINK_CMD = '' ]]; then
-      UPLOAD_LINK_CMD='rclone link'
-    fi
-    echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
-    read TG_SEND_PRIOR_CMD
-    echo -en "${YELLOW}Enter upload destination (remote) "
-    echo -en "[${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
-    read UPLOAD_DEST
-    if [[ $UPLOAD_DEST = '' ]]; then
-      UPLOAD_DEST='GDrive:/builds'
-    fi
-    echo -en "${YELLOW}Enter upload folder path (local) ('c' for none) "
-    echo -en "[${BLUE}gdrive:/idoybh2/builds/${YELLOW}]: ${NC}"
-    read UPLOAD_PATH
-    if [[ $UPLOAD_PATH = '' ]]; then
-      UPLOAD_PATH='gdrive:/idoybh2/builds/'
-    fi
-    if [[ $UPLOAD_PATH = 'c' ]]; then
-      UPLOAD_PATH=''
-    fi
-    echo -en "${YELLOW}Enter source path [${BLUE}.${YELLOW}]: ${NC}"
-    read SOURCE_PATH
-    if [[ $SOURCE_PATH = '' ]]; then
-      SOURCE_PATH='.'
-    fi
-    echo -en "${YELLOW}Enter build product name [${BLUE}dumpling${YELLOW}]: ${NC}"
-    read BUILD_PRODUCT_NAME
-    if [[ $BUILD_PRODUCT_NAME = '' ]]; then
-      BUILD_PRODUCT_NAME='dumpling'
-    fi
-    echo -en "${YELLOW}Enter built zip file name [${BLUE}Derp*.zip${YELLOW}]: ${NC}"
-    read BUILD_FILE_NAME
-    if [[ $BUILD_FILE_NAME = '' ]]; then
-      BUILD_FILE_NAME='Derp*.zip'
-    fi
-    echo -en "${YELLOW}Enter ADB push destination folder "
-    echo -en "[${BLUE}Flash/Derp${YELLOW}]: ${NC}"
-    read ADB_DEST_FOLDER
-    if [[ $ADB_DEST_FOLDER = '' ]]; then
-      ADB_DEST_FOLDER='Flash/Derp'
-    fi
-    echo -en "${YELLOW}Enter default move path ('c' for none) "
-    echo -en "[${BLUE}~/Desktop${YELLOW}]: ${NC}"
-    read UNHANDLED_PATH
-    if [[ $UNHANDLED_PATH = '' ]]; then
-      UNHANDLED_PATH='~/Desktop'
-    fi
-    if [[ $UNHANDLED_PATH = 'c' ]]; then
-      UNHANDLED_PATH=''
-    fi
-    echo -en "${YELLOW}Automatically remove build file? "
-    echo -en "y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
-    read AUTO_RM_BUILD
-    if [[ $AUTO_RM_BUILD = 'y' ]]; then
-      AUTO_RM_BUILD=1
-    elif [[ $AUTO_RM_BUILD = 'N' ]]; then
-      AUTO_RM_BUILD=0
-    else
-      AUTO_RM_BUILD=2
-    fi
-    echo -en "${YELLOW}Automatically reboot (to and from recovery)? "
-    echo -en "y/[${BLUE}n${YELLOW}]: ${NC}"
-    read AUTO_REBOOT
-    if [[ $AUTO_REBOOT = 'y' ]]; then
-      AUTO_REBOOT=1
-    else
-      AUTO_REBOOT=0
-    fi
-    echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
-    read UPLOAD_DONE_MSG
-    echo -en "${YELLOW}Set TWRP decryption pin "
-    echo -en "(0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
-    read TWRP_PIN
-    echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
-    echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
-    read isWriteConf
-    if [[ $isWriteConf != 'n' ]]; then
-      echo -en "${YELLOW}Enter config file name [${BLUE}build.conf${YELLOW}]: ${NC}"
-      read confPath
-      if [[ $confPath == '' ]]; then
-        confPath="build.conf"
-      fi
-      echo -e "${GREEN}Rewriting file${NC}"
-      rewrite_config $confPath
-    fi
+    init_conf
     echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isExit
     if [[ $isExit == 'n' ]]; then
