@@ -353,6 +353,9 @@ isKeep=0
 powerOpt=0
 intsallClean=0
 flagConflict=0
+productChanged=0
+targetChanged=0
+typeChanged=0
 while [[ $# > 0 ]]; do
   case "$1" in
     -h) # help
@@ -370,12 +373,10 @@ while [[ $# > 0 ]]; do
     shift
     ;;
     -u) # upload / user build
-    echo -e "${GREEN}User build!${NC}"
     isUpload=1
     shift
     ;;
     -p) # push
-    echo -e "${GREEN}Push build!${NC}"
     isPush=1
     shift
     ;;
@@ -384,39 +385,26 @@ while [[ $# > 0 ]]; do
     shift
     ;;
     -s) # silent
-    echo -e "${GREEN}Silent build!${NC}"
     isSilent=1
     shift
     ;;
     -d) # dry
-    echo -e "${GREEN}Dry run!${NC}"
     isDry=1
     shift
     ;;
     "--keep-file") # keep original build file
-    echo -e "${GREEN}Keeping original build file!${NC}"
     isKeep=1
     shift
     ;;
     "--power") #power operations
     powerOpt=$2
-    echo
-    if [[ $powerOpt == "off" ]]; then
-      echo -en "${GREEN}Script will wait ${RED}1 minute${GREEN} "
-      echo -e "and than perform a ${RED}power off${NC}"
-      shift 2
-    elif [[ $powerOpt == "reboot" ]]; then
-      echo -en "${GREEN}Script will wait ${RED}1 minute${GREEN} "
-      echo -e "and than perform a ${RED}reboot${NC}"
-      shift 2
-    else
-      echo -e "${GREEN}ERROR! Power option not recognized.${NC}"
+    if [[ $powerOpt != "off" ]] && [[ $powerOpt != "reboot" ]]; then
+      echo -e "${RED}ERROR! Power option not recognized.${NC}"
       exit 1
     fi
-    echo
+    shift 2
     ;;
     "--choose") # diff lunch commands
-    echo
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--choose"
     else
@@ -424,12 +412,10 @@ while [[ $# > 0 ]]; do
       exit 3
     fi
     TARGET_CHOOSE_CMD=$2
-    echo -e "${GREEN}One-time target choose: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
+    targetChanged=1
     shift 2
-    echo
     ;;
     "--product") # diff product fileName
-    echo
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--product"
     else
@@ -437,18 +423,15 @@ while [[ $# > 0 ]]; do
       exit 3
     fi
     BUILD_PRODUCT_NAME=$2
-    echo -e "${GREEN}One-time poduct name: ${BLUE}${TARGET_CHOOSE_CMD}${NC}"
-    echo
+    productChanged=1
     shift 2
     ;;
     "--type") # diff build type command
     BUILD_TYPE_CMD=$2
-    echo -e "${GREEN}One-time build type: ${BLUE}${BUILD_TYPE_CMD}${NC}"
-    echo
+    typeChanged=1
     shift 2
     ;;
     "--config") # diff config file
-    echo
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--config"
     else
@@ -456,13 +439,11 @@ while [[ $# > 0 ]]; do
       exit 3
     fi
     configFile=$2
-    echo -e "${GREEN}Using one-time config file: ${BLUE}${configFile}${NC}"
     load_config $configFile
     shift 2
     ;;
     "--installclean") # make installclean
     installClean=1
-    echo -e "${GREEN}make installclean${NC}"
     shift
     ;;
     -*|--*=) # unsupported flags
@@ -473,6 +454,38 @@ while [[ $# > 0 ]]; do
   esac
 done
 echo
+
+# Printing a table to summarize flags
+if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged != 0 ]] || [[ $configFile != "build.conf" ]]; then
+  echo -e "${YELLOW}----OVERRIDES----${NC}"
+fi
+[[ $configFile != "build.conf" ]] && echo -en "${RED}"
+echo -e "Config file  : ${BLUE}${configFile}${NC}"
+[[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
+[[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
+[[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
+echo
+echo -e "${YELLOW}------BUILD------${NC}"
+[[ $isClean == 1 ]] && echo -en "${RED}"
+echo -e "Clean        : ${isClean}${NC}"
+[[ $installClean == 1 ]] && echo -en "${RED}"
+echo -e "Installclean : ${isClean}${NC}"
+[[ $isDry == 1 ]] && echo -en "${RED}"
+echo -e "Dry          : ${isDry}${NC}"
+echo
+echo -e "${YELLOW}------FILE-------${NC}"
+[[ $isUpload == 1 ]] && echo -en "${RED}"
+echo -e "Upload       : ${isUpload}${NC}"
+[[ $isPush == 1 ]] && echo -en "${RED}"
+echo -e "Push         : ${isPush}${NC}"
+[[ $isKeep == 1 ]] && echo -en "${RED}"
+echo -e "Keep file    : ${isKeep}${NC}"
+echo
+echo -e "${YELLOW}-------ETC-------${NC}"
+[[ $isSilent == 1 ]] && echo -en "${RED}"
+echo -e "Silent       : ${isSilent}${NC}"
+[[ $powerOpt != 0 ]] && echo -en "${RED}"
+echo -e "Power        : ${powerOpt}${NC}"
 
 # Setting absolute paths, and checking configs
 if [[ $SOURCE_PATH = '.' ]]; then # converting SOURCE_PATH
@@ -505,13 +518,16 @@ if [[ $WAS_INIT == 0 ]]; then # show not configured warning
   echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
   sleep 3
 fi
-echo -e "${GREEN}Script dir:${BLUE} ${PWD}${NC}"
-echo -e "${GREEN}Source dir:${BLUE} ${SOURCE_PATH}${NC}"
-echo -e "${GREEN}Product name:${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
-echo -e "${GREEN}Upload destination:${BLUE} ${UPLOAD_DEST}${NC}"
-echo -e "${GREEN}ADB push destination:${BLUE} ${ADB_DEST_FOLDER}${NC}"
+
+echo
+echo -e "${YELLOW}-----CONFIGS-----${NC}"
+echo -e "Script dir             :${BLUE} ${PWD}${NC}"
+echo -e "Source dir             :${BLUE} ${SOURCE_PATH}${NC}"
+echo -e "Product name           :${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
+echo -e "Upload destination     :${BLUE} ${UPLOAD_DEST}${NC}"
+echo -e "ADB push destination   :${BLUE} ${ADB_DEST_FOLDER}${NC}"
 if [[ $UNHANDLED_PATH != '' ]]; then
-  echo -e "${GREEN}Move build destination:${BLUE} ${UNHANDLED_PATH}${NC}"
+  echo -e "Move build destination :${BLUE} ${UNHANDLED_PATH}${NC}"
 fi
 echo
 echo -en "${YELLOW}Waiting for ${BLUE}5${NC} ${YELLOW}seconds${NC}"
