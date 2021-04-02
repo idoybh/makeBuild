@@ -592,7 +592,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       isRec=$?
       if [[ $isRec == 0 ]]; then
         echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-        eval "adb push ${PATH_TO_BUILD_FILE} /sdcard/${ADB_DEST_FOLDER}/"
+        adb push $PATH_TO_BUILD_FILE /sdcard/$ADB_DEST_FOLDER/
         isPushed=$?
         if [[ $isPushed == 0 ]]; then
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
@@ -607,7 +607,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         fi
       elif [[ $isOn == 0 ]]; then
         echo -e "${GREEN}Device detected${NC}"
-        eval "adb push ${PATH_TO_BUILD_FILE} /storage/emulated/0/${ADB_DEST_FOLDER}/"
+        adb push $PATH_TO_BUILD_FILE /storage/emulated/0/$ADB_DEST_FOLDER/
         isPushed=$?
         if [[ $isPushed == 0 ]]; then
           echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
@@ -771,16 +771,16 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       isRM='n'
     fi
     if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
-      eval "rm ${PATH_TO_BUILD_FILE}"
-      eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
+      rm $PATH_TO_BUILD_FILE
+      rm $PATH_TO_BUILD_FILE.md5sum
       echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
       exit 0
     fi
   fi
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
-    eval "mv ${PATH_TO_BUILD_FILE} ${UNHANDLED_PATH}/"
-    eval "rm ${PATH_TO_BUILD_FILE}.md5sum"
+    mv $PATH_TO_BUILD_FILE $UNHANDLED_PATH/
+    rm $PATH_TO_BUILD_FILE.md5sum
     if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
     fi
