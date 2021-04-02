@@ -92,7 +92,6 @@ Possible values are:
 * `0` to never remove the original build file (w/o asking).
 * `1` to always remove the original build file (w/o asking).
 * `2` to always ask wether to remove the original build file (will prompt to change the default).  
-
 Set to `2` by default.
 ##### AUTO_REBOOT
 Set this to `1` to skip waiting for a keypress on each reboot.  
@@ -106,10 +105,13 @@ Set to nothing to disable. Disabled by default.
 Set this to the decryption pin used to decrypt data in TWRP.  
 Other possible values are:
 * Blank (no value) - will make the script wait for your manual decryption.  
-* `0` - will skip waiting for decryption altogether (for decrypted devices).
-
+* `0` - will skip waiting for decryption altogether (for decrypted devices).  
 For more information regarding patterns and more refer to: https://twrp.me/faq/openrecoveryscript.html  
 Set to `0` by default.
+##### TWRP_SIDELOAD
+Set this to `1` to use ADB sideload instead of pushing.  
+Will use [UNHANDLED_PATH][#UNHANDLED_PATH] when done.  
+Set to blank (no value) by default.
 
 ## Output color coding
 * *Red* for errors / warnings

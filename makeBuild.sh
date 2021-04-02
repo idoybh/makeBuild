@@ -20,13 +20,17 @@ adb_wait()
 {
   state=$1
   delay=$2
-  echo -e "${GREEN}Waiting for device${NC}"
+  if [[ $state != 'device' ]]; then
+    echo -e "${GREEN}Waiting for device in ${BLUE}${state}${NC}"
+  else
+    echo -e "${GREEN}Waiting for device"
+  fi
   while [[ $isDet != '0' ]]; do # wait until detected
     adb kill-server &> /dev/null
     adb start-server &> /dev/null
     adb devices | grep -w "${state}" &> /dev/null
     isDet=$?
-    sleep $delay
+    [[ $isDet != '0' ]] && sleep $delay
   done
 }
 
@@ -120,6 +124,7 @@ rewrite_config()
   config_write "AUTO_REBOOT" "${AUTO_REBOOT}" $confPath
   config_write "UPLOAD_DONE_MSG" "${UPLOAD_DONE_MSG}" $confPath
   config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
+  config_write "TWRP_SIDELOAD" "${TWRP_SIDELOAD}" $confPath
 }
 
 # loads given config file
@@ -259,6 +264,14 @@ init_conf()
   echo -en "${YELLOW}Set TWRP decryption pin "
   echo -en "(0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
   read TWRP_PIN
+  echo -en "${YELLOW}ADB sideload instead of push? "
+  echo -en "y/[${BLUE}n${YELLOW}]: ${NC}"
+  read TWRP_SIDELOAD
+  if [[ $TWRP_SIDELOAD = 'y' ]]; then
+    TWRP_SIDELOAD=1
+  else
+    TWRP_SIDELOAD=0
+  fi
   echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
   echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
   read isWriteConf
@@ -590,38 +603,36 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       isOn=$?
       adb devices | grep -w 'recovery' &> /dev/null
       isRec=$?
+      sdcardPath=""
       if [[ $isRec == 0 ]]; then
         echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-        adb push $PATH_TO_BUILD_FILE /sdcard/$ADB_DEST_FOLDER/
-        isPushed=$?
-        if [[ $isPushed == 0 ]]; then
-          echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-          buildH=1
-        else
-          isOn=1
-          isRec=1
-          isPushed=1
-          echo -en "${RED}Push error (see output). Press any key to try again${NC}"
-          read -n1 temp
-          echo
-        fi
+        sdcardPath="/sdcard"
       elif [[ $isOn == 0 ]]; then
         echo -e "${GREEN}Device detected${NC}"
-        adb push $PATH_TO_BUILD_FILE /storage/emulated/0/$ADB_DEST_FOLDER/
-        isPushed=$?
-        if [[ $isPushed == 0 ]]; then
-          echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-          buildH=1
-        else
-          isOn=1
-          isRec=1
-          isPushed=1
-          echo -en "${RED}Push error (see output). Press any key to try again${NC}"
-          read -n1 temp
-          echo
-        fi
+        sdcardPath="/storage/emulated/0/"
       else
         echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
+        read -n1 temp
+        echo
+      fi
+      if [[ $isRec != 0 ]] && [[ $isOn != 0 ]]; then
+        continue
+      fi
+      if [[ $TWRP_SIDELOAD == 1 ]]; then
+        isPushed=0
+        buildH=1
+        break
+      fi
+      adb push "${PATH_TO_BUILD_FILE}" "${sdcardPath}/${ADB_DEST_FOLDER}/"
+      isPushed=$?
+      if [[ $isPushed == 0 ]]; then
+        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
+        buildH=1
+      else
+        isOn=1
+        isRec=1
+        isPushed=1
+        echo -en "${RED}Push error (see output). Press any key to try again${NC}"
         read -n1 temp
         echo
       fi
@@ -643,10 +654,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
           adb reboot recovery
-          adb_wait 'recovery' 3
           isDecrypted=0
-          echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]]; then
+          if [[ $TWRP_SIDELOAD == 0 ]]; then
+            adb_wait 'recovery' 3
+            echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
+          fi
+          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
             adb_reset
             echo -e "${GREEN}Trying decryption with provided pin${NC}"
             adb shell twrp decrypt $TWRP_PIN
@@ -660,7 +673,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
               echo -e "${RED}Data decryption failed. Please try manually${NC}"
             fi
           fi
-          if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]]; then
+          if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
             echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
             read -n1 temp
             echo
@@ -672,14 +685,21 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         # Add extra pre-flash operations here
         fileName=`basename $PATH_TO_BUILD_FILE`
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
-        isFlashed=0
-        while [[ $isFlashed == 0 ]]; do
-          adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
-          if [[ $? != 0 ]]; then
-            echo -en "${RED}Flash error. Press any key to try again"
-            read -n1 temp
+        isFlashed=1 # reverse logic
+        while [[ $isFlashed != 0 ]]; do
+          if [[ $TWRP_SIDELOAD == 1 ]]; then
+            adb_wait 'sideload' 3
+            adb sideload $PATH_TO_BUILD_FILE
+            isFlashed=$?
           else
-            isFlashed=1
+            adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
+            isFlashed=$?
+          fi
+          if [[ $isFlashed != 0 ]]; then
+            echo -e "${RED}Flash error. Press any key to try again."
+            echo -en "Press 'c' to continue anyway${NC}"
+            read -n1 temp
+            [[ $temp != 'c' ]] && continue
           fi
           # Add additional flash operations here (magisk provided as example)
           # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
@@ -689,7 +709,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           read -n1 temp
           echo
         fi
-        adb shell twrp reboot
+        adb reboot
       fi
     fi
   fi
@@ -754,7 +774,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
   fi
   # remove original build file
-  if [[ $buildH == 1 ]]; then
+  if [[ $buildH == 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
     if [[ $AUTO_RM_BUILD == 2 ]]; then
       echo -en "${YELLOW}Remove original build file? [y]/n/A(lways)/N(ever): ${NC}"
       read isRM
