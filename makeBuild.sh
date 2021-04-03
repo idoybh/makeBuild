@@ -482,7 +482,7 @@ echo -e "${YELLOW}------BUILD------${NC}"
 [[ $isClean == 1 ]] && echo -en "${RED}"
 echo -e "Clean        : ${isClean}${NC}"
 [[ $installClean == 1 ]] && echo -en "${RED}"
-echo -e "Installclean : ${isClean}${NC}"
+echo -e "Installclean : ${installClean}${NC}"
 [[ $isDry == 1 ]] && echo -en "${RED}"
 echo -e "Dry          : ${isDry}${NC}"
 echo
