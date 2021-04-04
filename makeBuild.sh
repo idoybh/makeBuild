@@ -611,6 +611,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         echo -e "${GREEN}Device detected${NC}"
         sdcardPath="/storage/emulated/0/"
       else
+        if [[ $TWRP_SIDELOAD == 1 ]]; then
+          isPushed=0
+          buildH=1
+          break
+        fi
         echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
         read -n1 temp
         echo
@@ -800,7 +805,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
     mv $PATH_TO_BUILD_FILE $UNHANDLED_PATH/
-    rm $PATH_TO_BUILD_FILE.md5sum
+    mv $PATH_TO_BUILD_FILE.md5sum $UNHANDLED_PATH/
     if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
     fi
