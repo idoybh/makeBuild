@@ -69,7 +69,7 @@ print_help()
   echo -e "${BLUE}--type [CMD]${NC} to change build type command"
   echo -e "${BLUE}--product [ARG]${NC} to change target product name"
   echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
-  echo -e "${BLUE}--installclean${NC} to run ${BLUE}make installclean${NC} before the build"
+  echo -e "${BLUE}--installclean | --i-c${NC} to run ${BLUE}make installclean${NC} before the build"
   echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
   echo -en "${GREEN}For more help visit: "
   echo -e "${BLUE}https://github.com/idoybh/makeBuild/blob/master/README.md${NC}"
@@ -455,11 +455,11 @@ while [[ $# > 0 ]]; do
     load_config $configFile
     shift 2
     ;;
-    "--installclean") # make installclean
+    "--installclean"|"--i-c") # make installclean
     installClean=1
     shift
     ;;
-    -*|--*=) # unsupported flags
+    -*|--*) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
     print_help
     exit 1
