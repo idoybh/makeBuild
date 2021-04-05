@@ -13,7 +13,7 @@ You can start the script with the following flags:
 * **-c** to make a clean build (stands for clean - duh)
 * **-s** to disable telegram-send (stands for silent)
 * **-d** to run without building (stands for dry)
-* **--keep-file** to keep original build file where it is
+* **--keep-file | -k** to keep original build file where it is
 * **--power _[ARG]_** to power off or reboot if build successful
   * _[ARG]_ should be: `off` or `reboot`
 * **--choose _[CMD]_** to change target choose command (see [here](#target_choose_cmd)) temporarily

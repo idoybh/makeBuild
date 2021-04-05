@@ -62,7 +62,7 @@ print_help()
   echo -e "${BLUE}-c${NC} for a clean build"
   echo -e "${BLUE}-s${NC} to disable telegram-send bot"
   echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
-  echo -e "${BLUE}--keep-file${NC} to skip removal of original build file"
+  echo -e "${BLUE}--keep-file | -k${NC} to skip removal of original build file"
   echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"
   echo -e "   ${BLUE}Supported ARG(s): ${NC} off, reboot"
   echo -e "${BLUE}--choose [CMD]${NC} to change target choose command"
@@ -405,7 +405,7 @@ while [[ $# > 0 ]]; do
     isDry=1
     shift
     ;;
-    "--keep-file") # keep original build file
+    "--keep-file"|-k) # keep original build file
     isKeep=1
     shift
     ;;
