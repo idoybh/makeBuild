@@ -58,7 +58,8 @@ print_help()
   echo -e "${BLUE}-h${NC} to show this dialog and exit"
   echo -e "${BLUE}-i${NC} for setup"
   echo -e "${BLUE}-u${NC} for upload"
-  echo -e "${BLUE}-p${NC} for ADB push"
+  echo -e "${BLUE}-p${NC} for ADB push (and recovery flash)"
+  echo -e "${BLUE}-f${NC} for fastboot flash"
   echo -e "${BLUE}-c${NC} for a clean build"
   echo -e "${BLUE}-s${NC} to disable telegram-send bot"
   echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
@@ -359,13 +360,15 @@ load_config build.conf
 configFile="build.conf"
 isUpload=0
 isPush=0
+isFastboot=0
 isClean=0
 isSilent=0
 isDry=0
 isKeep=0
 powerOpt=0
-intsallClean=0
+installClean=0
 flagConflict=0
+flashConflict=0
 productChanged=0
 targetChanged=0
 typeChanged=0
@@ -391,6 +394,22 @@ while [[ $# > 0 ]]; do
     ;;
     -p) # push
     isPush=1
+    if [[ $flashConflict == 0 ]]; then
+      flashConflict="-p"
+    else
+      echo -e "${RED}ERROR! Can't use ${BLUE}-p${RED} with ${BLUE}${flashConflict}${NC}"
+      exit 3
+    fi
+    shift
+    ;;
+    -f) # fastboot
+    isFastboot=1
+    if [[ $flashConflict == 0 ]]; then
+      flashConflict="-f"
+    else
+      echo -e "${RED}ERROR! Can't use ${BLUE}-f${RED} with ${BLUE}${flashConflict}${NC}"
+      exit 3
+    fi
     shift
     ;;
     -c) # clean
@@ -491,6 +510,8 @@ echo -e "${YELLOW}------FILE-------${NC}"
 echo -e "Upload       : ${isUpload}${NC}"
 [[ $isPush == 1 ]] && echo -en "${RED}"
 echo -e "Push         : ${isPush}${NC}"
+[[ $isFastboot == 1 ]] && echo -en "${RED}"
+echo -e "Fastboot     : ${isFastboot}${NC}"
 [[ $isKeep == 1 ]] && echo -en "${RED}"
 echo -e "Keep file    : ${isKeep}${NC}"
 echo
@@ -717,6 +738,32 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         adb reboot
       fi
     fi
+  fi
+  # fastboot flash
+  if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
+    pDir=$(pwd)
+    cd "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}"
+    if [[ $AUTO_REBOOT == 1 ]]; then
+      adb reboot bootloader
+    else
+      echo -en "${YELLOW}Reboot to fastboot? y/[n]: ${NC}"
+      read ans
+      [[ $ans == 'y' ]] && adb reboot bootloader
+    fi
+    for img in $(ls *.img)
+    do
+      [[ $img == "userdata.img" ]] && continue
+      [[ $img == "ramdisk.img" ]] && continue
+      [[ $img == "ramdisk-recovery.img" ]] && continue
+      echo -en "${YELLOW}Flash ${BLUE}${img}${YELLOW}? y/[n]: ${NC}"
+      read ans
+      [[ $ans != 'y' ]] && continue
+      fastboot flash $(echo $img | cut -f1 -d".") $img
+    done
+    echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
+    read ans
+    [[ $ans == 'y' ]] && fastboot continue
+    cd $pDir
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then

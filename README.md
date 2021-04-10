@@ -10,6 +10,7 @@ You can start the script with the following flags:
 * **-i** to setup a new / overwrite .config through a CLI (stands for init)
 * **-u** to upload the built file (stands for upload / user)
 * **-p** to push the built file through adb (stands for push)
+* **-f** to flash built image files in $OUT through fastboot (stands for flash)
 * **-c** to make a clean build (stands for clean - duh)
 * **-s** to disable telegram-send (stands for silent)
 * **-d** to run without building (stands for dry)
@@ -22,7 +23,7 @@ You can start the script with the following flags:
 * **--config _[FILE]_** to change the config file temporarily
 * **--installclean | --i-c** to run make installclean before the build
 
-**Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together.
+**Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together. Same goes for `-p` and `-f`.
 
 ## build.conf
 The default configuration file of the script.  
