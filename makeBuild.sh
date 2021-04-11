@@ -750,6 +750,17 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       read ans
       [[ $ans == 'y' ]] && adb reboot bootloader
     fi
+    # slots
+    echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
+    slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
+    slot=$(echo $slot | cut -f 2 -d ":")
+    slot2=a
+    [[ $slot = " a" ]] && slot2=b
+    echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
+    read ans
+    [[ $ans != 'n' ]] && fastboot --set-active=$slot2
+    # flashing
+    tg_send "Flashing build"
     for img in $(ls *.img)
     do
       [[ $img == "userdata.img" ]] && continue
