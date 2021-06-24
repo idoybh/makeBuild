@@ -743,7 +743,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # fastboot flash
   if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
     pDir=$(pwd)
-    cd "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}"
+    cd "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates"
+    cd $(ls -td ./*/ | head -n 1)
+    cd IMAGES
     if [[ $AUTO_REBOOT == 1 ]]; then
       adb reboot bootloader
     else
