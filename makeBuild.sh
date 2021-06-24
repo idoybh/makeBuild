@@ -753,12 +753,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       read ans
       [[ $ans == 'y' ]] && adb reboot bootloader
     fi
-    # slots
     echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
     slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
-    slot=$(echo $slot | cut -f 2 -d ":")
+    slot=$(echo $slot | sed "s/current-slot: //")
     slot2=a
-    [[ $slot = " a" ]] && slot2=b
+    [[ $slot = $slot2 ]] && slot2=b
     echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
     read ans
     [[ $ans != 'n' ]] && fastboot --set-active=$slot2
@@ -767,8 +766,6 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     for img in $(ls *.img)
     do
       [[ $img == "userdata.img" ]] && continue
-      [[ $img == "ramdisk.img" ]] && continue
-      [[ $img == "ramdisk-recovery.img" ]] && continue
       echo -en "${YELLOW}Flash ${BLUE}${img}${YELLOW}? y/[n]: ${NC}"
       read ans
       [[ $ans != 'y' ]] && continue
