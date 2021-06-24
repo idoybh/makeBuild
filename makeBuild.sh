@@ -790,11 +790,11 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       fi
     fi
     isMD5Uploaded=0
-    if [[ -f "${PATH_TO_BUILD_FILE}.md5sum" ]]; then
-      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.md5sum ${UPLOAD_DEST}"
+    if [[ -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
+      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
       isMD5Uploaded=1
     else
-      echo -e "${RED}Couldn't find md5sum file. Not uploading${NC}"
+      echo -e "${RED}Couldn't find sha256sum file. Not uploading${NC}"
     fi
     if [[ $isUploaded == 1 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
@@ -805,7 +805,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         fileLink=`eval $cmd`
         isFileLinkFailed=$?
         if [[ $isMD5Uploaded == 1 ]]; then
-          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.md5sum"
+          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
           md5Link=`eval $cmd`
           isMD5LinkFailed=$?
         fi
@@ -813,7 +813,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
           if [[ $isMD5LinkFailed == 0 ]]; then
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">MD5</a>"
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">SHA-256</a>"
           else
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
@@ -855,7 +855,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     fi
     if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
       rm $PATH_TO_BUILD_FILE
-      rm $PATH_TO_BUILD_FILE.md5sum
+      rm $PATH_TO_BUILD_FILE.sha256sum
       echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
       exit 0
     fi
@@ -863,7 +863,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
     mv $PATH_TO_BUILD_FILE $UNHANDLED_PATH/
-    mv $PATH_TO_BUILD_FILE.md5sum $UNHANDLED_PATH/
+    mv $PATH_TO_BUILD_FILE.sha256sum $UNHANDLED_PATH/
     if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
     fi
