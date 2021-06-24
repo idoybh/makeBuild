@@ -493,6 +493,7 @@ if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged !=
 fi
 [[ $configFile != "build.conf" ]] && echo -en "${RED}"
 echo -e "Config file  : ${BLUE}${configFile}${NC}"
+[[ $configFile != "build.conf" ]] && diff --color build.conf $configFile && echo "-----------------"
 [[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
 [[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
 [[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
