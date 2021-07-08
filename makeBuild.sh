@@ -834,6 +834,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     else
       echo -e "${RED}Upload failed${NC}"
       tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+      buildH=0
     fi
   fi
   # remove original build file
@@ -883,7 +884,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     reboot
   fi
 
-  exit 0
+  exit $([[ $isUpload == 0 ]] || [[ $isUploaded == 1 ]])
 fi
 # If build fails:
 if [[ $isSilent == 0 ]]; then
