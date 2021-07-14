@@ -677,7 +677,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       fi
       # flash build
       if [[ $isFlash == 'y' ]]; then
-        tg_send "Flashing build"
+        tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
+        start_time=$(date +"%s")
         if [[ $isOn == 0 ]]; then
           echo -e "${GREEN}Rebooting to recovery${NC}"
           adb reboot recovery
@@ -737,6 +738,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           echo
         fi
         adb reboot
+        get_time
+        tg-send "Flashing <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
       fi
     fi
   fi
