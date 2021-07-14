@@ -826,7 +826,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           fi
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
-          tg_send "Getting link for <code>${BUILD_PRODUCT_NAME}</code> failed"
+          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
         fi
       fi
       if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
