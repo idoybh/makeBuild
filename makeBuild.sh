@@ -745,10 +745,6 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # fastboot flash
   if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
-    pDir=$(pwd)
-    cd "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates"
-    cd $(ls -td ./*/ | head -n 1)
-    cd IMAGES
     if [[ $AUTO_REBOOT == 1 ]]; then
       adb reboot bootloader
     else
@@ -757,27 +753,28 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       [[ $ans == 'y' ]] && adb reboot bootloader
     fi
     echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
+    fastboot wait-for-device &> /dev/null
+    sleep 3
     slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
-    slot=$(echo $slot | sed "s/current-slot: //")
-    slot2=a
-    [[ $slot = $slot2 ]] && slot2=b
+    slot="$(echo $slot | sed "s/current-slot: //")"
+    echo -e "Currently on slot ${BLUE}${slot}${NC}"
+    slot2="a"
+    [[ $slot = $slot2 ]] && slot2="b"
     echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
     read ans
     [[ $ans != 'n' ]] && fastboot --set-active=$slot2
     # flashing
     tg_send "Flashing build"
-    for img in $(ls *.img)
-    do
-      [[ $img == "userdata.img" ]] && continue
-      echo -en "${YELLOW}Flash ${BLUE}${img}${YELLOW}? y/[n]: ${NC}"
+    fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
+    # after flash operations here (magisk as an example):
+    # fastboot flash boot magisk_patched*
+    if [[ $AUTO_REBOOT != 1 ]]; then
+      echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
       read ans
-      [[ $ans != 'y' ]] && continue
-      fastboot flash $(echo $img | cut -f1 -d".") $img
-    done
-    echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
-    read ans
-    [[ $ans == 'y' ]] && fastboot continue
-    cd $pDir
+    else
+      ans=y
+    fi
+    [[ $ans == 'y' ]] && sleep 5 && fastboot reboot
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then
