@@ -764,7 +764,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     read ans
     [[ $ans != 'n' ]] && fastboot --set-active=$slot2
     # flashing
-    tg_send "Flashing build"
+    tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
     fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
     # after flash operations here (magisk as an example):
     # fastboot flash boot magisk_patched*
