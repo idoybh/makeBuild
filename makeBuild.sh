@@ -818,12 +818,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
           fi
-          if [[ $UPLOAD_DONE_MSG != '' ]]; then
-            tg_send "${UPLOAD_DONE_MSG}"
-          fi
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
           tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
+        fi
+        if [[ $UPLOAD_DONE_MSG != '' ]]; then
+          tg_send "${UPLOAD_DONE_MSG}"
         fi
       fi
       if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
