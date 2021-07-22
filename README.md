@@ -28,7 +28,7 @@ You can start the script with the following flags:
 ## build.conf
 The default configuration file of the script.  
 Can be changed per run with the flag `--config`.  
-**Note** Must have at least one space before `=` and everything afterwards (incl spaces) will be used as the value.  
+**Note** Must have at least one space before `=` whitespaces after are safely ignored
 
 ##### WAS_INIT
 Just a flag to show weather the **-i** flag was used before.  

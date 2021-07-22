@@ -84,7 +84,9 @@ config_read()
   rProp=$1
   cFile=$2
   lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
-  echo $(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)
+  res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
+  res="$(echo $res | xargs)"
+  echo $res
 }
 
 # sets a property vlaue to the config file
@@ -144,7 +146,7 @@ load_config()
       if [[ $firstChar != "#" ]] && [[ $firstChar != '' ]]; then
         cVar=$(echo $curLine | awk '{print $1}')
         cVal=$(config_read $cVar $cFile)
-        eval "export ${cVar}=\"${cVal}\""
+        export $cVar="${cVal}"
       fi
     done
   else
