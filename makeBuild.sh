@@ -43,10 +43,18 @@ tg_send()
     if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
-    if [[ -f "${tgmsg}" ]]; then
-      telegram-send --file "${tgmsg}"
-    else
-      telegram-send --disable-web-page-preview --format html "${tgmsg}"
+    if [[ $TG_SEND_CFG_FILE == '' ]]; then
+        if [[ -f "${tgmsg}" ]]; then
+          telegram-send --file "${tgmsg}"
+        else
+          telegram-send --disable-web-page-preview --format html "${tgmsg}"
+        fi
+      else
+        if [[ -f "${tgmsg}" ]]; then
+          telegram-send --config $TG_SEND_CFG_FILE --file "${tgmsg}"
+        else
+          telegram-send --config $TG_SEND_CFG_FILE --disable-web-page-preview --format html "${tgmsg}"
+        fi
     fi
   fi
 }
@@ -116,6 +124,7 @@ rewrite_config()
   config_write "UPLOAD_CMD" "${UPLOAD_CMD}" $confPath
   config_write "UPLOAD_LINK_CMD" "${UPLOAD_LINK_CMD}" $confPath
   config_write "TG_SEND_PRIOR_CMD" "${TG_SEND_PRIOR_CMD}" $confPath
+  config_write "TG_SEND_CFG_FILE" "${TG_SEND_CFG_FILE}" $confPath
   config_write "UPLOAD_DEST" "${UPLOAD_DEST}" $confPath
   config_write "UPLOAD_PATH" "${UPLOAD_PATH}" $confPath
   config_write "SOURCE_PATH" "${SOURCE_PATH}" $confPath
@@ -200,6 +209,8 @@ init_conf()
   fi
   echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
   read TG_SEND_PRIOR_CMD
+  echo -en "${YELLOW}Enter telegram send config file path [${BLUE}none${YELLOW}]: ${NC}"
+  read TG_SEND_CFG_FILE
   echo -en "${YELLOW}Enter upload destination (remote) "
   echo -en "[${BLUE}GDrive:/builds${YELLOW}]: ${NC}"
   read UPLOAD_DEST
@@ -383,7 +394,7 @@ flashConflict=0
 productChanged=0
 targetChanged=0
 typeChanged=0
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     -h) # help
     print_help
@@ -489,7 +500,7 @@ while [[ $# > 0 ]]; do
     installClean=1
     shift
     ;;
-    -*|--*) # unsupported flags
+    --*|-*) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
     print_help
     exit 1
@@ -608,7 +619,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # Count build files:
   NOFiles=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
       -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /)
-  if [[ $NOFiles > 1 ]]; then
+  if [[ $NOFiles -gt 1 ]]; then
     echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
     PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
       -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}")
@@ -770,7 +781,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     slot="$(echo $slot | sed "s/current-slot: //")"
     echo -e "Currently on slot ${BLUE}${slot}${NC}"
     slot2="a"
-    [[ $slot == $slot2 ]] && slot2="b"
+    [[ $slot == "a" ]] && slot2="b"
     if [[ $AUTO_SLOT == 1 ]]; then
       ans=y
     else

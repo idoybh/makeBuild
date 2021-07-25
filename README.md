@@ -57,6 +57,9 @@ Set to `rclone copy -v` by default.
 ##### UPLOAD_LINK_CMD
 Set this to whatever command you use to get download links for uploaded files.  
 Set to `rclone link` by default.
+##### TG_SEND_CFG_FILE
+Set this to a telegram-send config file path (relative or absolute), blank to use default.  
+Set to blank by default
 ##### UPLOAD_DEST
 Set this to the upload destination **remote** folder.  
 It will be added at the very end of the upload command, after the local built file path.  
