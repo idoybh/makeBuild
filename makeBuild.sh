@@ -607,11 +607,10 @@ if [[ $isDry == 0 ]]; then
   eval $BUILD_CMD # build
   # no commands allowed in here!
   buildRes=$? # save result (exit code)
+  get_time
 else
   buildRes=0
 fi
-
-get_time
 
 # handle built file
 buildH=0 # build handled?
