@@ -626,7 +626,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
       -maxdepth 1 -type f -name "${BUILD_FILE_NAME}"`
   else
-    echo -en "${RED}ERROR! Failed to find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
+    echo -en "${RED}ERROR! Could not find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
     echo -e "in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
     exit 1
   fi
