@@ -93,7 +93,7 @@ config_read()
   cFile=$2
   lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
   res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
-  res="$(echo $res | xargs)"
+  res="$(echo $res | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
   echo $res
 }
 
