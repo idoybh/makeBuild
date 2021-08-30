@@ -17,9 +17,9 @@ You can start the script with the following flags:
 * **--keep-file | -k** to keep original build file where it is
 * **--power _[ARG]_** to power off or reboot if build successful
     * _[ARG]_ should be: `off` or `reboot`
-* **--choose _[CMD]_** to change target choose command (see [here](#target_choose_cmd)) temporarily
-* **--type _[CMD]_** to change build type command (see [here](#build_type_cmd)) temporarily
-* **--product _[ARG]_** to change build product name (see [here](#build_product_name)) temporarily
+* **--choose _[CMD]_** to change target choose command (see [TARGET_CHOOSE_CMD](#target_choose_cmd)) temporarily
+* **--type _[CMD]_** to change build type command (see [BUILD_TYPE_CMD](#build_type_cmd)) temporarily
+* **--product _[ARG]_** to change build product name (see [BUILD_PRODUCT_NAME](#build_product_name)) temporarily
 * **--config _[FILE]_** to change the config file temporarily
 * **--installclean | --i-c** to run make installclean before the build
 
@@ -88,7 +88,7 @@ Please note the script automatically detects if you're booted / in recovery.
 **Please do not start this path with an '/'**. Set to `Flash/Derp` by default.
 ##### UNHANDLED_PATH
 Set this to the **local** path you want the script to move the built file to if no handling flags are selected.  
-You can either use a relative or an absolute path. The same notes of *SOURCE_PATH* apply here.  
+You can either use a relative or an absolute path. The same notes of [SOURCE_PATH](#source_path) apply here.  
 You can also set this to blank (no value) to disable this function.
 ##### AUTO_RM_BUILD
 Controls whether to automatically remove original build files (after handled)
@@ -117,7 +117,7 @@ For more information regarding patterns and more refer to the [TWRP documentatio
 Set to `0` by default.
 ##### TWRP_SIDELOAD
 Set this to `1` to use ADB sideload instead of pushing.  
-Will use [UNHANDLED_PATH][#UNHANDLED_PATH] when done.  
+Will use [UNHANDLED_PATH](#unhandled_path) when done.  
 Set to blank (no value) by default.
 
 ## Output color coding
