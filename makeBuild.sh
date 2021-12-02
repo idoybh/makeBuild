@@ -43,18 +43,14 @@ tg_send()
     if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
       eval $TG_SEND_PRIOR_CMD
     fi
-    if [[ $TG_SEND_CFG_FILE == '' ]]; then
-        if [[ -f "${tgmsg}" ]]; then
-          telegram-send --file "${tgmsg}"
-        else
-          telegram-send --disable-web-page-preview --format html "${tgmsg}"
-        fi
-      else
-        if [[ -f "${tgmsg}" ]]; then
-          telegram-send --config $TG_SEND_CFG_FILE --file "${tgmsg}"
-        else
-          telegram-send --config $TG_SEND_CFG_FILE --disable-web-page-preview --format html "${tgmsg}"
-        fi
+    tgcmd=''
+    if [[ $TG_SEND_CFG_FILE != '' ]]; then
+      tgcmd=" --config ${TG_SEND_CFG_FILE}"
+    fi
+    if [[ -f "${tgmsg}" ]]; then
+      telegram-send$tgcmd --file "${tgmsg}"
+    else
+      telegram-send$tgcmd --disable-web-page-preview --format html "${tgmsg}"
     fi
   fi
 }
