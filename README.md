@@ -40,6 +40,10 @@ Set to `make clobber` by default.
 ##### TARGET_CHOOSE_CMD
 Set this to whatever command you use to "lunch" / select the product to build prior to the build command.  
 Set to `lunch derp_dumpling-userdebug` by default.
+##### PRE_BUILD_SCRIPT
+Set this to a relative / absolute path to a script that should run before building.  
+The script mentioned will be sourced, so note all vars and functions will keep existing in the script's shell.  
+Set to blank to disable. Set to blank by default.
 ##### BUILD_TYPE_CMD
 Set this to whatever command you use to select a build type. This will be run after lunch.  
 Set to blank to disable. Set to blank by default

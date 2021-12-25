@@ -114,6 +114,7 @@ rewrite_config()
   config_write "WAS_INIT" 1 $confPath
   config_write "CLEAN_CMD" "${CLEAN_CMD}" $confPath
   config_write "TARGET_CHOOSE_CMD" "${TARGET_CHOOSE_CMD}" $confPath
+  config_write "PRE_BUILD_SCRIPT" "${PRE_BUILD_SCRIPT}" $confPath
   config_write "BUILD_TYPE_CMD" "${BUILD_TYPE_CMD}" $confPath
   config_write "BUILD_CMD" "${BUILD_CMD}" $confPath
   config_write "FILE_MANAGER_CMD" "${FILE_MANAGER_CMD}" $confPath
@@ -176,6 +177,9 @@ init_conf()
   if [[ $TARGET_CHOOSE_CMD == '' ]]; then
     TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
   fi
+  echo -en "${YELLOW}Enter pre build script path "
+  echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
+  read PRE_BUILD_SCRIPT
   echo -en "${YELLOW}Enter build type command "
   echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
   read BUILD_TYPE_CMD
@@ -319,6 +323,9 @@ pre_build()
   fi
   if [[ $BUILD_TYPE_CMD != '' ]]; then
     eval $BUILD_TYPE_CMD # build type
+  fi
+  if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ -f $PRE_BUILD_SCRIPT ]]; then
+    source $PRE_BUILD_SCRIPT
   fi
   tg_send "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
   start_time=$(date +"%s")
