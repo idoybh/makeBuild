@@ -57,7 +57,7 @@ Setting this to blank (no value) will disable launching file manager across the 
 Set to `dolphin` by default (KDE's default file manager)
 ##### UPLOAD_CMD
 Set this to whatever command you use to upload your file.  
-Set to `rclone copy -v` by default.
+Set to `rclone copy -P` by default.
 ##### UPLOAD_LINK_CMD
 Set this to whatever command you use to get download links for uploaded files.  
 Set to `rclone link` by default.

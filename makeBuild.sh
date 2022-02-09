@@ -200,7 +200,7 @@ init_conf()
   echo -en "${YELLOW}Enter upload command [${BLUE}rclone copy -v${YELLOW}]: ${NC}"
   read UPLOAD_CMD
   if [[ $UPLOAD_CMD == '' ]]; then
-    UPLOAD_CMD='rclone copy -v'
+    UPLOAD_CMD='rclone copy -P'
   fi
   echo -en "${YELLOW}Enter upload link command [${BLUE}rclone link${YELLOW}]: ${NC}"
   read UPLOAD_LINK_CMD
