@@ -39,7 +39,7 @@ Set this to whatever command you use to make a clean build.
 Set to `make clobber` by default.
 ##### TARGET_CHOOSE_CMD
 Set this to whatever command you use to "lunch" / select the product to build prior to the build command.  
-Set to `lunch derp_dumpling-userdebug` by default.
+Set to `lunch yaap_guacamole-user` by default.
 ##### PRE_BUILD_SCRIPT
 Set this to a relative / absolute path to a script that should run before building.  
 The script mentioned will be sourced, so note all vars and functions will keep existing in the script's shell.  
@@ -49,7 +49,7 @@ Set this to whatever command you use to select a build type. This will be run af
 Set to blank to disable. Set to blank by default
 ##### BUILD_CMD
 Set this to whatever command you use to initiate the build process. It will be run inside the source directory.  
-Set to `mka kronic` by default
+Set to `mka yaap` by default
 ##### FILE_MANAGER_CMD
 Set this to whatever command you use to lunch your file manager.  
 It is usually just the name of your file manager and depends on your Linux distribution.  
@@ -73,7 +73,7 @@ Set this to a **local** folder showing your remote files.
 This folder will be opened with your chosen file manager after the built file has been uploaded.  
 You can also set this to blank (no value) to disable this function across the script.  
 **Please notice:** only set this to an absolute path. It will ***not*** be checked nor converted - to allow you to choose whatever you want.  
-Set to `gdrive:/idoybh2@gmail.com/builds/` by default. Again, just to provide an example.
+Set to `gdrive:/idoybh2/builds/` by default. Again, just to provide an example.
 ##### SOURCE_PATH
 Set this to either a relative or an absolute path that points to your root source directory.
 The script will `cd` into this directory for the build process.  
@@ -82,14 +82,14 @@ Generally, I would recommend just cloning this repo to your root source folder a
 **Please do not use `..` as the first chars**. Set to `.` by default.
 ##### BUILD_PRODUCT_NAME
 This should be set to the product name in `out/target/product/`. Usually, this is your device's codename.  
-Set to `dumpling` by default.
+Set to `guacamole` by default.
 ##### BUILD_FILE_NAME
 Set this to the built file name. Because it usually changes with the date you should use `*.zip` at the end of it and the
-constant part of the name at the beginning. See default value `Derp*.zip` as an example.
+constant part of the name at the beginning. See default value `YAAP*.zip` as an example.
 ##### ADB_DEST_FOLDER
 Set this to the folder you would like to adb push into - **relative to internal storage**  
 Please note the script automatically detects if you're booted / in recovery.  
-**Please do not start this path with an '/'**. Set to `Flash/Derp` by default.
+**Please do not start this path with an '/'**. Set to `Flash/YAAP` by default.
 ##### UNHANDLED_PATH
 Set this to the **local** path you want the script to move the built file to if no handling flags are selected.  
 You can either use a relative or an absolute path. The same notes of [SOURCE_PATH](#source_path) apply here.  

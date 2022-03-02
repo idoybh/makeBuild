@@ -45,12 +45,12 @@ tg_send()
     fi
     tgcmd=''
     if [[ $TG_SEND_CFG_FILE != '' ]]; then
-      tgcmd=" --config ${TG_SEND_CFG_FILE}"
+      tgcmd="--config ${TG_SEND_CFG_FILE}"
     fi
     if [[ -f "${tgmsg}" ]]; then
-      telegram-send$tgcmd --file "${tgmsg}"
+      telegram-send $tgcmd --file "${tgmsg}"
     else
-      telegram-send$tgcmd --disable-web-page-preview --format html "${tgmsg}"
+      telegram-send $tgcmd --disable-web-page-preview --format html "${tgmsg}"
     fi
   fi
 }
@@ -90,7 +90,7 @@ config_read()
   lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
   res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
   res="$(echo $res | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-  echo $res
+  eval "echo ${res}"
 }
 
 # sets a property vlaue to the config file
@@ -146,17 +146,17 @@ load_config()
   if [[ -f $cFile ]]; then
     linesNO=$(wc -l $cFile)
     linesNO="${linesNO:0:2}"
-    for (( ii = 1; ii <= $linesNO; ii++ )); do
+    for (( ii = 1; ii <= linesNO; ii++ )); do
       curLine=$(sed "${ii}q;d" $cFile)
       firstChar="${curLine:0:1}"
       if [[ $firstChar != "#" ]] && [[ $firstChar != '' ]]; then
-        cVar=$(echo $curLine | awk '{print $1}')
-        cVal=$(config_read $cVar $cFile)
+        cVar="$(echo $curLine | awk '{print $1}')"
+        cVal="$(config_read $cVar $cFile)"
         export $cVar="${cVal}"
       fi
     done
   else
-    echo -e "${RED}ERROR! No ${BLUE}build.config${RED} file${NC}"
+    echo -e "${RED}ERROR! ${BLUE}${cFile}${RED} not found${NC}"
     exit 2
   fi
 }
@@ -172,10 +172,10 @@ init_conf()
     CLEAN_CMD='make clobber'
   fi
   echo -en "${YELLOW}Enter target choose command "
-  echo -en "[${BLUE}lunch derp_dumpling-userdebug${YELLOW}]: ${NC}"
+  echo -en "[${BLUE}lunch yaap_guacamole-user${YELLOW}]: ${NC}"
   read TARGET_CHOOSE_CMD
   if [[ $TARGET_CHOOSE_CMD == '' ]]; then
-    TARGET_CHOOSE_CMD='lunch derp_dumpling-userdebug'
+    TARGET_CHOOSE_CMD='lunch yaap_guacamole-user'
   fi
   echo -en "${YELLOW}Enter pre build script path "
   echo -en "[${BLUE}blank${YELLOW}]: ${NC}"
@@ -236,22 +236,22 @@ init_conf()
   if [[ $BUILD_PRODUCT_NAME == '' ]]; then
     BUILD_PRODUCT_NAME='dumpling'
   fi
-  echo -en "${YELLOW}Enter built zip file name [${BLUE}Derp*.zip${YELLOW}]: ${NC}"
+  echo -en "${YELLOW}Enter built zip file name [${BLUE}YAAP*.zip${YELLOW}]: ${NC}"
   read BUILD_FILE_NAME
   if [[ $BUILD_FILE_NAME == '' ]]; then
-    BUILD_FILE_NAME='Derp*.zip'
+    BUILD_FILE_NAME='YAAP*.zip'
   fi
   echo -en "${YELLOW}Enter ADB push destination folder "
-  echo -en "[${BLUE}Flash/Derp${YELLOW}]: ${NC}"
+  echo -en "[${BLUE}Flash/YAAP${YELLOW}]: ${NC}"
   read ADB_DEST_FOLDER
   if [[ $ADB_DEST_FOLDER == '' ]]; then
-    ADB_DEST_FOLDER='Flash/Derp'
+    ADB_DEST_FOLDER='Flash/YAAP'
   fi
   echo -en "${YELLOW}Enter default move path ('c' for none) "
-  echo -en "[${BLUE}~/Desktop${YELLOW}]: ${NC}"
+  echo -en "[${BLUE}\$HOME/Desktop${YELLOW}]: ${NC}"
   read UNHANDLED_PATH
   if [[ $UNHANDLED_PATH == '' ]]; then
-    UNHANDLED_PATH='~/Desktop'
+    UNHANDLED_PATH="${HOME}/Desktop"
   fi
   if [[ $UNHANDLED_PATH == 'c' ]]; then
     UNHANDLED_PATH=''
@@ -335,22 +335,22 @@ pre_build()
 get_time()
 {
   end_time=$(date +"%s")
-  tdiff=$(($end_time-$start_time)) # time diff
+  tdiff=$(( end_time - start_time )) # time diff
 
   # Formatting total build time
-  hours=$(($tdiff / 3600 ))
+  hours=$(( tdiff / 3600 ))
   hoursOut=$hours
   if [[ ${#hours} -lt 2 ]]; then
     hoursOut="0${hours}"
   fi
 
-  mins=$((($tdiff % 3600) / 60))
+  mins=$(((tdiff % 3600) / 60))
   minsOut=$mins
   if [[ ${#mins} -lt 2 ]]; then
     minsOut="0${mins}"
   fi
 
-  secs=$(($tdiff % 60))
+  secs=$((tdiff % 60))
   if [[ ${#secs} -lt 2 ]]; then
     secs="0${secs}"
   fi
@@ -547,28 +547,26 @@ echo -e "Silent       : ${isSilent}${NC}"
 [[ $powerOpt != 0 ]] && echo -en "${RED}"
 echo -e "Power        : ${powerOpt}${NC}"
 
-# Setting absolute paths, and checking configs
-if [[ $SOURCE_PATH == '.' ]]; then # converting SOURCE_PATH
-  SOURCE_PATH=$PWD
-elif [[ ${SOURCE_PATH:0:1} == '.' ]]; then
-  SOURCE_PATH=${SOURCE_PATH#"."}
-  SOURCE_PATH="${PWD}/${SOURCE_PATH}"
-elif [[ ${SOURCE_PATH:0:1} != '/' ]] && [[ ${SOURCE_PATH:0:1} != '~' ]]; then
-  echo -en "${RED}ERROR! Invalid source path in config. "
-  echo -e "Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}'${NC}"
-  exit 2
+# checking configs (paths only, there's a limit for the spoonfeed)
+if [[ ! -d $SOURCE_PATH ]]; then
+  echo -en "${RED}ERROR! Provided source path "
+  echo -e "${BLUE}${SOURCE_PATH}${RED} is invalid${NC}"
+  exit 1
 fi
-if [[ $UNHANDLED_PATH = '.' ]]; then # converting UNHANDLED_PATH
-  UNHANDLED_PATH=$PWD
-elif [[ ${UNHANDLED_PATH:0:1} == '.' ]]; then
-  UNHANDLED_PATH=${UNHANDLED_PATH#"."}
-  UNHANDLED_PATH="${PWD}/${UNHANDLED_PATH}"
-elif [[ ${UNHANDLED_PATH:0:1} != '/' ]] && [[ ${UNHANDLED_PATH:0:1} != '~' ]] &&
-    [[ $UNHANDLED_PATH != '' ]]; then
-  echo -en "${RED}ERROR! Invalid source path in config. "
-  echo -en "Must start with '${NC}.${RED}' or '${NC}/${RED}' or '${NC}~${RED}' "
-  echo -e "or be exactly '${NC}c${RED}'${NC}"
-  exit 2
+if [[ $UNHANDLED_PATH != '' ]] && [[ ! -d $UNHANDLED_PATH ]]; then
+  echo -en "${RED}ERROR! Provided unhandled path "
+  echo -e "${BLUE}${UNHANDLED_PATH}${RED} is invalid${NC}"
+  exit 1
+fi
+if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ ! -f $PRE_BUILD_SCRIPT ]]; then
+  echo -en "${RED}ERROR! Provided pre-build script "
+  echo -e "${BLUE}${PRE_BUILD_SCRIPT}${RED} does not exist${NC}"
+  exit 1
+fi
+if [[ $TG_SEND_CFG_FILE != '' ]] && [[ ! -f $TG_SEND_CFG_FILE ]]; then
+  echo -en "${RED}ERROR! Provided tlegram-send config "
+  echo -e "${BLUE}${TG_SEND_CFG_FILE}${RED} does not exist${NC}"
+  exit 1
 fi
 
 if [[ $WAS_INIT == 0 ]]; then # show not configured warning
@@ -626,8 +624,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
       -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}")
   elif [[ $NOFiles == 1 ]]; then
-    PATH_TO_BUILD_FILE=`find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
-      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}"`
+    PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}")
   else
     echo -en "${RED}ERROR! Could not find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
     echo -e "in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
@@ -735,7 +733,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           adb_reset
         fi
         # Add extra pre-flash operations here
-        fileName=`basename $PATH_TO_BUILD_FILE`
+        fileName=$(basename $PATH_TO_BUILD_FILE)
         echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
         isFlashed=1 # reverse logic
         while [[ $isFlashed != 0 ]]; do
@@ -827,14 +825,14 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     if [[ $isUploaded == 1 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
-        fileName=`basename $PATH_TO_BUILD_FILE`
+        fileName=$(basename $PATH_TO_BUILD_FILE)
         # Edit next line according to the way you fetch the link:
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
-        fileLink=`eval $cmd`
+        fileLink=$(eval $cmd)
         isFileLinkFailed=$?
         if [[ $isMD5Uploaded == 1 ]]; then
           cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-          md5Link=`eval $cmd`
+          md5Link=$(eval $cmd)
           isMD5LinkFailed=$?
         fi
         if [[ $isFileLinkFailed == 0 ]]; then
@@ -891,8 +889,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
-    mv $PATH_TO_BUILD_FILE $UNHANDLED_PATH/
-    mv $PATH_TO_BUILD_FILE.sha256sum $UNHANDLED_PATH/
+    mv $PATH_TO_BUILD_FILE "${UNHANDLED_PATH}"/
+    mv $PATH_TO_BUILD_FILE.sha256sum "${UNHANDLED_PATH}"/
     if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
     fi
