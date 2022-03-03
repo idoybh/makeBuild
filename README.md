@@ -80,20 +80,20 @@ The script will `cd` into this directory for the build process.
 Note that if the first char is `.` it will be replaced by the path of the script - thus allowing you to use a relative path.  
 Generally, I would recommend just cloning this repo to your root source folder and keep this as is.  
 **Please do not use `..` as the first chars**. Set to `.` by default.
+##### UNHANDLED_PATH
+Set this to the **local** path you want the script to move the built file to if no handling flags are selected.  
+You can either use a relative or an absolute path. The same notes of [SOURCE_PATH](#source_path) apply here.  
+You can also set this to blank (no value) to disable this function.
+##### ADB_DEST_FOLDER
+Set this to the folder you would like to adb push into - **relative to internal storage**  
+Please note the script automatically detects if you're booted / in recovery.  
+**Please do not start this path with an '/'**. Set to `Flash/YAAP` by default.
 ##### BUILD_PRODUCT_NAME
 This should be set to the product name in `out/target/product/`. Usually, this is your device's codename.  
 Set to `guacamole` by default.
 ##### BUILD_FILE_NAME
 Set this to the built file name. Because it usually changes with the date you should use `*.zip` at the end of it and the
 constant part of the name at the beginning. See default value `YAAP*.zip` as an example.
-##### ADB_DEST_FOLDER
-Set this to the folder you would like to adb push into - **relative to internal storage**  
-Please note the script automatically detects if you're booted / in recovery.  
-**Please do not start this path with an '/'**. Set to `Flash/YAAP` by default.
-##### UNHANDLED_PATH
-Set this to the **local** path you want the script to move the built file to if no handling flags are selected.  
-You can either use a relative or an absolute path. The same notes of [SOURCE_PATH](#source_path) apply here.  
-You can also set this to blank (no value) to disable this function.
 ##### AUTO_RM_BUILD
 Controls whether to automatically remove original build files (after handled)
 Possible values are:
