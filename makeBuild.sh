@@ -548,15 +548,19 @@ echo -e "Silent       : ${isSilent}${NC}"
 echo -e "Power        : ${powerOpt}${NC}"
 
 # checking configs (paths only, there's a limit for the spoonfeed)
+SOURCE_PATH=$(realpath "$SOURCE_PATH")
 if [[ ! -d $SOURCE_PATH ]]; then
   echo -en "${RED}ERROR! Provided source path "
   echo -e "${BLUE}${SOURCE_PATH}${RED} is invalid${NC}"
   exit 1
 fi
-if [[ $UNHANDLED_PATH != '' ]] && [[ ! -d $UNHANDLED_PATH ]]; then
-  echo -en "${RED}ERROR! Provided unhandled path "
-  echo -e "${BLUE}${UNHANDLED_PATH}${RED} is invalid${NC}"
-  exit 1
+if [[ $UNHANDLED_PATH != '' ]]; then
+  UNHANDLED_PATH=$(realpath "$UNHANDLED_PATH")
+  if [[ ! -d $UNHANDLED_PATH ]]; then
+    echo -en "${RED}ERROR! Provided unhandled path "
+    echo -e "${BLUE}${UNHANDLED_PATH}${RED} is invalid${NC}"
+    exit 1
+  fi
 fi
 if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ ! -f $PRE_BUILD_SCRIPT ]]; then
   echo -en "${RED}ERROR! Provided pre-build script "
