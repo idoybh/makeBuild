@@ -819,13 +819,13 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         get_time
       fi
     fi
-    isMD5Uploaded=0
-    if [[ -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
-      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
-      isMD5Uploaded=1
-    else
-      echo -e "${RED}Couldn't find sha256sum file. Not uploading${NC}"
+    if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
+      echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
+      touch "${PATH_TO_BUILD_FILE}.sha256sum"
+      sha256sum "${PATH_TO_BUILD_FILE}" | cut -d ' ' -f1 > "${PATH_TO_BUILD_FILE}.sha256sum"
+      echo >> "${PATH_TO_BUILD_FILE}.sha256sum"
     fi
+    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
     if [[ $isUploaded == 1 ]]; then
       echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
       if [[ $isSilent == 0 ]]; then
@@ -834,11 +834,9 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=$(eval $cmd)
         isFileLinkFailed=$?
-        if [[ $isMD5Uploaded == 1 ]]; then
-          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-          md5Link=$(eval $cmd)
-          isMD5LinkFailed=$?
-        fi
+        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
+        md5Link=$(eval $cmd)
+        isMD5LinkFailed=$?
         if [[ $isFileLinkFailed == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
           if [[ $isMD5LinkFailed == 0 ]]; then
