@@ -895,8 +895,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     mv $PATH_TO_BUILD_FILE.sha256sum "${UNHANDLED_PATH}"/
     if [[ $FILE_MANAGER_CMD != '' ]]; then
       eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
+      disown
     fi
-    disown
   fi
 
   # power operations
