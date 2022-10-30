@@ -591,6 +591,9 @@ echo -e "ADB push destination   :${BLUE} ${ADB_DEST_FOLDER}${NC}"
 if [[ $UNHANDLED_PATH != '' ]]; then
   echo -e "Move build destination :${BLUE} ${UNHANDLED_PATH}${NC}"
 fi
+if [[ $UPLOAD_DONE_MSG != '' ]]; then
+  echo -e "Upload done message    :${BLUE} ${UPLOAD_DONE_MSG}${NC}"
+fi
 echo
 echo -en "${YELLOW}Waiting for ${BLUE}5${NC} ${YELLOW}seconds${NC}"
 for (( i = 5; i >= 1; i-- )); do
