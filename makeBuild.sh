@@ -90,7 +90,7 @@ config_read()
   lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
   res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
   res="$(echo $res | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-  eval "echo ${res}"
+  eval "echo \"${res}\""
 }
 
 # sets a property vlaue to the config file
