@@ -834,20 +834,27 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       if [[ $isSilent == 0 ]]; then
         fileName=$(basename $PATH_TO_BUILD_FILE)
         # Edit next line according to the way you fetch the link:
-        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
-        fileLink=$(eval $cmd)
-        isFileLinkFailed=$?
-        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-        md5Link=$(eval $cmd)
-        isMD5LinkFailed=$?
+        isFileLinkFailed=1
+        isMD5LinkFailed=1
+        if [[ $UPLOAD_LINK_CMD != "" ]]; then
+          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
+          fileLink=$(eval $cmd)
+          isFileLinkFailed=$?
+          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
+          md5Link=$(eval $cmd)
+          isMD5LinkFailed=$?
+        fi
         if [[ $isFileLinkFailed == 0 ]]; then
           echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
           if [[ $isMD5LinkFailed == 0 ]]; then
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">SHA-256</a>"
-          else
+          elif [[ $isFileLinkFailed == 0 ]]; then
             tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+          else
+            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>"
           fi
         else
           echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"

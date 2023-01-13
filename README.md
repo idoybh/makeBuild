@@ -60,6 +60,7 @@ Set this to whatever command you use to upload your file.
 Set to `rclone copy -P` by default.
 ##### UPLOAD_LINK_CMD
 Set this to whatever command you use to get download links for uploaded files.  
+Set to nothing to disable.  
 Set to `rclone link` by default.
 ##### TG_SEND_CFG_FILE
 Set this to a telegram-send config file path (relative or absolute), blank to use default.  
