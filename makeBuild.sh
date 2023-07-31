@@ -133,6 +133,7 @@ rewrite_config()
   config_write "AUTO_REBOOT" "${AUTO_REBOOT}" $confPath
   config_write "AUTO_SLOT" "${AUTO_REBOOT}" $confPath
   config_write "UPLOAD_DONE_MSG" "${UPLOAD_DONE_MSG}" $confPath
+  config_write "FAILURE_MSG" "${FAILURE_MSG}" $confPath
   config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
   config_write "TWRP_SIDELOAD" "${TWRP_SIDELOAD}" $confPath
 }
@@ -284,6 +285,8 @@ init_conf()
   fi
   echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
   read UPLOAD_DONE_MSG
+  echo -en "${YELLOW}Set extra failure message [${BLUE}blank${YELLOW}]: ${NC}"
+  read FAILURE_MSG
   echo -en "${YELLOW}Set TWRP decryption pin "
   echo -en "(0 for decrypted; blank to wait) [${BLUE}blank${YELLOW}]: ${NC}"
   read TWRP_PIN
@@ -631,6 +634,9 @@ fi
 if [[ $UPLOAD_DONE_MSG != '' ]]; then
   echo -e "Upload done message    :${BLUE} ${UPLOAD_DONE_MSG}${NC}"
 fi
+if [[ $FAILURE_MSG != '' ]]; then
+  echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
+fi
 echo
 echo -en "${YELLOW}Waiting for ${BLUE}5${NC} ${YELLOW}seconds${NC}"
 for (( i = 5; i >= 1; i-- )); do
@@ -970,6 +976,7 @@ if [[ $isSilent == 0 ]]; then
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
     tg_send "${SOURCE_PATH}/out/error.log"
+    [[ $FAILURE_MSG != '' ]] && tg_send "${FAILURE_MSG}"
   else
     echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
     tg_send "Build was canceled after <code>${buildTime}</code>."

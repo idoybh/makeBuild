@@ -114,6 +114,9 @@ Set to `0` by default.
 Set this to an extra message you want to send when the upload is done.  
 A good option may be a tag list or a link to changelog.  
 Set to nothing to disable. Disabled by default.
+##### FAILURE_MSG
+Set this to an extra message you want to send if the build fails.  
+Set to nothing to disable. Disabled by default.
 ##### TWRP_PIN
 Set this to the decryption pin used to decrypt data in TWRP.  
 Other possible values are:
