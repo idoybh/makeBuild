@@ -331,6 +331,36 @@ pre_build()
   start_time=$(date +"%s")
 }
 
+# magisk patch and pull
+magisk_patch()
+{
+  adb_wait 'device' 2
+  echo -e "${GREEN}Magisk patching${NC}"
+  echo -e "${GREEN}Env setup${NC}"
+  idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
+  idir=$(eval echo "${idir}")
+  mflags="KEEPVERITY=true SYSTEM_ROOT=true RECOVERYMODE=false"
+  cryptoState=$(adb shell getprop ro.crypto.state)
+  [[ $cryptoState == "encrypted" ]] && mflags="${mflags} KEEPFORCEENCRYPT=true"
+  if ls "${idir}/vbmeta.img" &>2 /dev/null; then
+    mflags="${mflags} PATCHVBMETAFLAG=true"
+  fi
+  echo -e "${GREEN}Pushing ${BLUE}boot.img${NC}"
+  adb push "${idir}/boot.img" "/sdcard/" || exit 1
+  adb shell su -c "rm -f /data/adb/magisk/new-boot.img"
+  echo -e "${GREEN}Patching ${BLUE}/sdcard/boot.img${NC}"
+  adb shell su -c "${mflags} /data/adb/magisk/boot_patch.sh /sdcard/boot.img" || exit 1
+  ver=$(adb shell magisk -V) || exit 1
+  adb shell rm "/sdcard/Download/magisk_patched-*.img" &> /dev/null
+  adb shell su -c "mv /data/adb/magisk/new-boot.img /sdcard/Download/magisk_patched-${ver}.img" || exit 1
+  adb shell su -c "/data/adb/magisk/magiskboot cleanup"
+  echo -e "${GREEN}Pulling version ${BLUE}${ver}${NC}"
+  rm ./magisk_patched-*.img
+  adb pull "/sdcard/Download/magisk_patched-${ver}.img" ./ || exit 1
+  fpath=$(realpath "./magisk_patched-${ver}.img")
+  echo -e "${GREEN}Magisk patching done. Image: ${BLUE}${fpath}${NC}"
+}
+
 # formats the time passed relative to $start_time and stores it in $buildTime
 get_time()
 {
@@ -390,6 +420,7 @@ isClean=0
 isSilent=0
 isDry=0
 isKeep=0
+isMagisk=0
 powerOpt=0
 installClean=0
 flagConflict=0
@@ -451,6 +482,10 @@ while [[ $# -gt 0 ]]; do
     ;;
     "--keep-file"|-k) # keep original build file
     isKeep=1
+    shift
+    ;;
+    "--magisk"|-m) # patch and pull magisk from boot
+    isMagisk=1
     shift
     ;;
     "--power") #power operations
@@ -540,6 +575,8 @@ echo -e "Push         : ${isPush}${NC}"
 echo -e "Fastboot     : ${isFastboot}${NC}"
 [[ $isKeep == 1 ]] && echo -en "${RED}"
 echo -e "Keep file    : ${isKeep}${NC}"
+[[ $isMagisk == 1 ]] && echo -en "${RED}"
+echo -e "Magisk       : ${isMagisk}${NC}"
 echo
 echo -e "${YELLOW}-------ETC-------${NC}"
 [[ $isSilent == 1 ]] && echo -en "${RED}"
@@ -641,6 +678,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
   if [[ $isDry == 0 ]]; then
     tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
+  fi
+  # magisk patching
+  if [[ $isMagisk == 1 ]]; then
+    magisk_patch
   fi
   # push build
   if [[ $isPush == 1 ]]; then
