@@ -342,7 +342,8 @@ magisk_patch()
   echo -e "${GREEN}Env setup${NC}"
   idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
   idir=$(eval echo "${idir}")
-  mflags="KEEPVERITY=true SYSTEM_ROOT=true RECOVERYMODE=false"
+  # set these flags according to your device
+  mflags="KEEPVERITY=true LEGACYSAR=true RECOVERYMODE=false"
   cryptoState=$(adb shell getprop ro.crypto.state)
   [[ $cryptoState == "encrypted" ]] && mflags="${mflags} KEEPFORCEENCRYPT=true"
   if ls "${idir}/vbmeta.img" &>2 /dev/null; then
