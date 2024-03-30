@@ -14,23 +14,49 @@ adb_reset()
 }
 
 # waits for a recognizeable device in given state
-# $1: device state
-# $2: delay between scans in seconds
+# $1: delay between scans in seconds
+# $2: device states array
 adb_wait()
 {
-  state=$1
-  delay=$2
-  if [[ $state != 'device' ]]; then
-    echo -e "${GREEN}Waiting for device in ${BLUE}${state}${NC}"
+  delay=$1
+  shift
+  states=("$@")
+  if [[ ${#states[@]} == 1 ]]; then
+    state=${states[$i]}
+    if [[ $state != 'device' ]]; then
+      echo -e "${GREEN}Waiting for device in ${BLUE}${state}${NC}"
+    else
+      echo -e "${GREEN}Waiting for device${NC}"
+    fi
   else
-    echo -e "${GREEN}Waiting for device"
+    outp="${GREEN}Waiting for device in"
+    for i in "${!states[@]}"; do
+      [[ $i -gt 0 ]] && outp="${outp} or"
+      if [[ ${states[$i]} == 'device' ]]; then
+        outp="${outp} ${BLUE}on${GREEN}"
+        continue
+      fi
+      outp="${outp} ${BLUE}${states[$i]}${GREEN}"
+    done
+    echo -e "${outp} state${NC}"
   fi
-  while [[ $isDet != '0' ]]; do # wait until detected
-    adb kill-server &> /dev/null
-    adb start-server &> /dev/null
-    adb devices | grep -w "${state}" &> /dev/null
-    isDet=$?
-    [[ $isDet != '0' ]] && sleep $delay
+  isDet=1 # reversed logic
+  while [[ $isDet != 0 ]]; do # wait until detected
+    for i in "${!states[@]}"; do
+      if [[ ${states[$i]} == 'bootloader' ]] || [[ ${states[$i]} == 'fastboot' ]]; then
+        if [[ $(fastboot devices) ]]; then
+          isDet=0
+          break
+        fi
+        continue
+      fi
+      adb kill-server &> /dev/null
+      adb start-server &> /dev/null
+      adb devices | grep -w "${states[$i]}" &> /dev/null
+      isDet=$?
+      [[ $isDet == 0 ]] && break
+    done
+    [[ $isDet != 0 ]] && sleep $delay
   done
 }
 
@@ -337,7 +363,8 @@ pre_build()
 # magisk patch and pull
 magisk_patch()
 {
-  adb_wait 'device' 2
+  stateA=('device')
+  adb_wait 1 "${stateA[@]}"
   echo -e "${GREEN}Magisk patching${NC}"
   echo -e "${GREEN}Env setup${NC}"
   idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
@@ -761,7 +788,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
           adb reboot recovery
           isDecrypted=0
           if [[ $TWRP_SIDELOAD == 0 ]]; then
-            adb_wait 'recovery' 3
+            stateA=('recovery')
+            adb_wait 3 "${stateA[@]}"
             echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
           fi
           if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
@@ -793,7 +821,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
         isFlashed=1 # reverse logic
         while [[ $isFlashed != 0 ]]; do
           if [[ $TWRP_SIDELOAD == 1 ]]; then
-            adb_wait 'sideload' 3
+            stateA=('sideload')
+            adb_wait 3 "${stateA[@]}"
             adb sideload $PATH_TO_BUILD_FILE
             isFlashed=$?
           else
@@ -822,14 +851,25 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   # fastboot flash
   if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
+    ans='n'
     if [[ $AUTO_REBOOT == 1 ]]; then
-      adb reboot bootloader
+      ans='y'
     else
       echo -en "${YELLOW}Reboot to fastboot? y/[n]: ${NC}"
       read ans
-      [[ $ans == 'y' ]] && adb reboot bootloader
     fi
-    echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
+    if [[ $ans == 'y' ]]; then
+      adb reboot bootloader &> /dev/null
+      if [[ $? != 0 ]]; then
+        stateA=('device' 'bootloader')
+        adb_wait 2 "${stateA[@]}"
+      fi
+      adb devices | grep -w "device" &> /dev/null
+      [[ $? == 0 ]] && adb reboot bootloader &> /dev/null
+    fi
+    if ! [[ $(fastboot devices) ]]; then
+      echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
+    fi
     fastboot wait-for-device &> /dev/null
     sleep 3
     slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
