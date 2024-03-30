@@ -316,11 +316,11 @@ init_conf()
 pre_build()
 {
   source "${SOURCE_PATH}/build/envsetup.sh"
+  eval $TARGET_CHOOSE_CMD # target
   if [[ $isClean == 1 ]]; then
     echo -e "${GREEN}Cleaning build${NC}"
     eval $CLEAN_CMD
   fi
-  eval $TARGET_CHOOSE_CMD # target
   if [[ $installClean == 1 ]]; then
     make installclean
   fi
