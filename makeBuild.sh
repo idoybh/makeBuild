@@ -338,7 +338,7 @@ init_conf()
   fi
 }
 
-# performes required pre build operations
+# performs required pre build operations
 pre_build()
 {
   source "${SOURCE_PATH}/build/envsetup.sh"
@@ -424,6 +424,23 @@ get_time()
   else
     buildTime="${secs} seconds"
   fi
+}
+
+# wait for a given amount of time and outputs
+# $1 time to wait in seconds
+wait_for()
+{
+  secs=$1
+  for (( i = $secs; i >= 1; i-- )); do
+    tput sc
+    echo -en "${YELLOW}Waiting for ${BLUE}${i}${NC} ${YELLOW}seconds${NC}"
+    sleep 1
+    tput rc
+  done
+  # clear this line, but remain on it
+  tput sc
+  tput ed
+  tput rc
 }
 
 ######################
@@ -646,7 +663,7 @@ if [[ $WAS_INIT == 0 ]]; then # show not configured warning
   echo -en "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} "
   echo -e "in ${BLUE}build.config${GREEN} to hide this warning${NC}"
   echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
-  sleep 3
+  wait_for 3
 fi
 
 echo
@@ -666,14 +683,8 @@ if [[ $FAILURE_MSG != '' ]]; then
   echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
 fi
 echo
-echo -en "${YELLOW}Waiting for ${BLUE}5${NC} ${YELLOW}seconds${NC}"
-for (( i = 5; i >= 1; i-- )); do
-  echo -e '\e[1A\e[K'
-  echo -en "${YELLOW}Waiting for ${BLUE}${i}${NC} ${YELLOW}seconds${NC}"
-  sleep 1
-done
-echo -e '\e[1A\e[K'
-echo -e "${GREEN}Starting build       ${NC}"
+wait_for 5
+echo -e "${GREEN}Starting build${NC}"
 sleep 1
 
 # changing dir to source path
@@ -799,8 +810,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
             if [[ $? == 0 ]]; then
               isDecrypted=1
               echo -e "${GREEN}Data decrypted${NC}"
-              echo -e "${GREEN}Waiting for ${BLUE}5 seconds${NC}"
-              sleep 5
+              wait_for 5
               adb_reset
             else
               echo -e "${RED}Data decryption failed. Please try manually${NC}"
@@ -871,7 +881,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
       echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
     fi
     fastboot wait-for-device &> /dev/null
-    sleep 3
+    wait_for 3
     slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
     slot="$(echo $slot | sed "s/current-slot: //")"
     echo -e "Currently on slot ${BLUE}${slot}${NC}"
@@ -895,7 +905,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
     else
       ans=y
     fi
-    [[ $ans == 'y' ]] && sleep 5 && fastboot reboot
+    if [[ $ans == 'y' ]]; then
+      wait_for 5
+      fastboot reboot
+    fi
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then
@@ -1001,12 +1014,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $powerOpt == "off" ]]; then
     echo -e "${GREEN}Powering off in ${BLUE}1 minute${NC}"
     echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
-    sleep 60
+    wait_for 60
     poweroff
   elif [[ $powerOpt == "reboot" ]]; then
     echo -e "${GREEN}Rebooting in ${BLUE}1 minute${NC}"
     echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
-    sleep 60
+    wait_for 60
     reboot
   fi
 
