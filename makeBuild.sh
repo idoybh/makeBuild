@@ -356,6 +356,12 @@ pre_build()
   if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ -f $PRE_BUILD_SCRIPT ]]; then
     source $PRE_BUILD_SCRIPT
   fi
+  if [[ $preBuildScripts != '' ]]; then
+    for script in ${preBuildScripts// / }; do
+      [[ ! -f $script ]] && continue
+      source "${script}"
+    done
+  fi
   tg_send "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
   start_time=$(date +"%s")
 }
@@ -476,6 +482,7 @@ flashConflict=0
 productChanged=0
 targetChanged=0
 typeChanged=0
+preBuildScripts=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h) # help
@@ -585,6 +592,10 @@ while [[ $# -gt 0 ]]; do
     "--installclean"|"--i-c") # make installclean
     installClean=1
     shift
+    ;;
+    "--script") # run a pre-build script
+    preBuildScripts="${preBuildScripts}$2 "
+    shift 2
     ;;
     --*|-*) # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2

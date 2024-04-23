@@ -23,6 +23,7 @@ You can start the script with the following flags:
 * **--product _[ARG]_** to change build product name (see [BUILD_PRODUCT_NAME](#build_product_name)) temporarily
 * **--config _[FILE]_** to change the config file temporarily
 * **--installclean | --i-c** to run make installclean before the build
+* **--script** to run (source) an external script before the build - can be used multiple times
 
 **Note** `--config`, `--choose` and `--product` should **not** be used together and will **not** affect build.conf - Build will error out if those are used together. Same goes for `-p` and `-f`.
 
