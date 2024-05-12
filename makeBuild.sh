@@ -338,6 +338,110 @@ init_conf()
   fi
 }
 
+# checking configs (paths only, there's a limit for the spoonfeed)
+check_confs()
+{
+  SOURCE_PATH=$(realpath "$SOURCE_PATH")
+  if [[ ! -d $SOURCE_PATH ]]; then
+    echo -en "${RED}ERROR! Provided source path "
+    echo -e "${BLUE}${SOURCE_PATH}${RED} is invalid${NC}"
+    exit 1
+  fi
+  if [[ $UNHANDLED_PATH != '' ]]; then
+    UNHANDLED_PATH=$(realpath "$UNHANDLED_PATH")
+    if [[ ! -d $UNHANDLED_PATH ]]; then
+      echo -en "${RED}ERROR! Provided unhandled path "
+      echo -e "${BLUE}${UNHANDLED_PATH}${RED} is invalid${NC}"
+      exit 1
+    fi
+  fi
+  if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ ! -f $PRE_BUILD_SCRIPT ]]; then
+    echo -en "${RED}ERROR! Provided pre-build script "
+    echo -e "${BLUE}${PRE_BUILD_SCRIPT}${RED} does not exist${NC}"
+    exit 1
+  fi
+  if [[ $TG_SEND_CFG_FILE != '' ]] && [[ ! -f $TG_SEND_CFG_FILE ]]; then
+    echo -en "${RED}ERROR! Provided tlegram-send config "
+    echo -e "${BLUE}${TG_SEND_CFG_FILE}${RED} does not exist${NC}"
+    exit 1
+  fi
+
+  if [[ $WAS_INIT == 0 ]]; then # show not configured warning
+    echo -e "${RED}WARNING! Script configs were never initialized!${NC}"
+    echo -en "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} "
+    echo -e "in ${BLUE}build.config${GREEN} to hide this warning${NC}"
+    echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
+    wait_for 3
+  fi
+}
+
+# Prints a table to summarize flags
+print_flags()
+{
+  if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged != 0 ]] || [[ $configFile != "build.conf" ]]; then
+    echo -e "${YELLOW}----OVERRIDES----${NC}"
+  fi
+  [[ $configFile != "build.conf" ]] && echo -en "${RED}"
+  echo -e "Config file  : ${BLUE}${configFile}${NC}"
+  [[ $configFile != "build.conf" ]] && diff --color build.conf $configFile && echo "-----------------"
+  [[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
+  [[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
+  [[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
+  echo
+  echo -e "${YELLOW}------BUILD------${NC}"
+  [[ $isClean == 1 ]] && echo -en "${RED}"
+  echo -e "Clean        : ${isClean}${NC}"
+  [[ $installClean == 1 ]] && echo -en "${RED}"
+  echo -e "Installclean : ${installClean}${NC}"
+  [[ $isDry == 1 ]] && echo -en "${RED}"
+  echo -e "Dry          : ${isDry}${NC}"
+  echo
+  echo -e "${YELLOW}------FILE-------${NC}"
+  [[ $isUpload == 1 ]] && echo -en "${RED}"
+  echo -e "Upload       : ${isUpload}${NC}"
+  [[ $isPush == 1 ]] && echo -en "${RED}"
+  echo -e "Push         : ${isPush}${NC}"
+  [[ $isFastboot == 1 ]] && echo -en "${RED}"
+  echo -e "Fastboot     : ${isFastboot}${NC}"
+  [[ $isKeep == 1 ]] && echo -en "${RED}"
+  echo -e "Keep file    : ${isKeep}${NC}"
+  [[ $isMagisk == 1 ]] && echo -en "${RED}"
+  echo -e "Magisk       : ${isMagisk}${NC}"
+  echo
+  echo -e "${YELLOW}-------ETC-------${NC}"
+  [[ $isSilent == 1 ]] && echo -en "${RED}"
+  echo -e "Silent       : ${isSilent}${NC}"
+  [[ $powerOpt != 0 ]] && echo -en "${RED}"
+  echo -e "Power        : ${powerOpt}${NC}"
+}
+
+# Prints a table to summarize configs
+print_confs()
+{
+  echo
+  echo -e "${YELLOW}-----CONFIGS-----${NC}"
+  echo -e "Script dir             :${BLUE} ${PWD}${NC}"
+  echo -e "Source dir             :${BLUE} ${SOURCE_PATH}${NC}"
+  echo -e "Product name           :${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
+  echo -e "Upload destination     :${BLUE} ${UPLOAD_DEST}${NC}"
+  echo -e "ADB push destination   :${BLUE} ${ADB_DEST_FOLDER}${NC}"
+  if [[ $UNHANDLED_PATH != '' ]]; then
+    echo -e "Move build destination :${BLUE} ${UNHANDLED_PATH}${NC}"
+  fi
+  if [[ $UPLOAD_DONE_MSG != '' ]]; then
+    echo -e "Upload done message    :${BLUE} ${UPLOAD_DONE_MSG}${NC}"
+  fi
+  if [[ $FAILURE_MSG != '' ]]; then
+    echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
+  fi
+  if [[ $preBuildScripts != "" ]]; then
+    for script in ${preBuildScripts// / }; do
+      [[ ! -f $script ]] && continue
+      echo -e "Pre-build script       :${BLUE} ${script}${NC}"
+    done
+  fi
+}
+
 # performs required pre build operations
 pre_build()
 {
@@ -396,6 +500,286 @@ magisk_patch()
   adb pull "/sdcard/Download/magisk_patched-${ver}.img" ./ || exit 1
   fpath=$(realpath "./magisk_patched-${ver}.img")
   echo -e "${GREEN}Magisk patching done. Image: ${BLUE}${fpath}${NC}"
+}
+
+# handles the push flag (-p)
+handle_push()
+{
+  echo -e "${GREEN}Pushing...${NC}"
+  isOn=1 # Device is booted (reverse logic)
+  isRec=1 # Device is on recovery mode (reverse logic)
+  isPushed=1 # Weater the push went fine (reverse logic)
+  while [[ $isOn != 0 ]] && [[ $isRec != 0 ]] && [[ $isPushed != 0 ]]; do
+    adb_reset
+    adb devices | grep -w 'device' &> /dev/null
+    isOn=$?
+    adb devices | grep -w 'recovery' &> /dev/null
+    isRec=$?
+    sdcardPath=""
+    if [[ $isRec == 0 ]]; then
+      echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
+      sdcardPath="/sdcard"
+    elif [[ $isOn == 0 ]]; then
+      echo -e "${GREEN}Device detected${NC}"
+      sdcardPath="/storage/emulated/0/"
+    else
+      if [[ $TWRP_SIDELOAD == 1 ]]; then
+        isPushed=0
+        buildH=1
+        break
+      fi
+      echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
+      read -n1 temp
+      echo
+    fi
+    if [[ $isRec != 0 ]] && [[ $isOn != 0 ]]; then
+      continue
+    fi
+    if [[ $TWRP_SIDELOAD == 1 ]]; then
+      isPushed=0
+      buildH=1
+      break
+    fi
+    adb push "${PATH_TO_BUILD_FILE}" "${sdcardPath}/${ADB_DEST_FOLDER}/"
+    isPushed=$?
+    if [[ $isPushed == 0 ]]; then
+      echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
+      buildH=1
+    else
+      isOn=1
+      isRec=1
+      isPushed=1
+      echo -en "${RED}Push error (see output). Press any key to try again${NC}"
+      read -n1 temp
+      echo
+    fi
+  done
+  if [[ $isPushed == 0 ]]; then
+    if [[ $AUTO_REBOOT == 0 ]]; then
+      echo -en "${YELLOW}Flash now? y/[n]/A(lways): ${NC}"
+      read isFlash
+      if [[ $isFlash == 'A' ]]; then
+        config_write "AUTO_REBOOT" 1 $configFile
+        isFlash='y'
+      fi
+    else
+      isFlash='y'
+    fi
+    # flash build
+    if [[ $isFlash == 'y' ]]; then
+      tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
+      start_time=$(date +"%s")
+      if [[ $isOn == 0 ]]; then
+        echo -e "${GREEN}Rebooting to recovery${NC}"
+        adb reboot recovery
+        isDecrypted=0
+        if [[ $TWRP_SIDELOAD == 0 ]]; then
+          stateA=('recovery')
+          adb_wait 3 "${stateA[@]}"
+          echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
+        fi
+        if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
+          adb_reset
+          echo -e "${GREEN}Trying decryption with provided pin${NC}"
+          adb shell twrp decrypt $TWRP_PIN
+          if [[ $? == 0 ]]; then
+            isDecrypted=1
+            echo -e "${GREEN}Data decrypted${NC}"
+            wait_for 5
+            adb_reset
+          else
+            echo -e "${RED}Data decryption failed. Please try manually${NC}"
+          fi
+        fi
+        if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
+          echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
+          read -n1 temp
+          echo
+          adb_reset
+        fi
+      else
+        adb_reset
+      fi
+      # Add extra pre-flash operations here
+      fileName=$(basename $PATH_TO_BUILD_FILE)
+      echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
+      isFlashed=1 # reverse logic
+      while [[ $isFlashed != 0 ]]; do
+        if [[ $TWRP_SIDELOAD == 1 ]]; then
+          stateA=('sideload')
+          adb_wait 3 "${stateA[@]}"
+          adb sideload $PATH_TO_BUILD_FILE
+          isFlashed=$?
+        else
+          adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
+          isFlashed=$?
+        fi
+        if [[ $isFlashed != 0 ]]; then
+          echo -e "${RED}Flash error. Press any key to try again."
+          echo -en "Press 'c' to continue anyway${NC}"
+          read -n1 temp
+          [[ $temp != 'c' ]] && continue
+        fi
+        # Add additional flash operations here (magisk provided as example)
+        # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
+      done
+      if [[ $AUTO_REBOOT == 0 ]]; then
+        echo -en "${YELLOW}Press any key to reboot${NC}"
+        read -n1 temp
+        echo
+      fi
+      adb reboot
+      get_time
+      tg-send "Flashing <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
+    fi
+  fi
+}
+
+# handles the fastboot flag (-f)
+handle_fastboot()
+{
+  ans='n'
+  if [[ $AUTO_REBOOT == 1 ]]; then
+    ans='y'
+  else
+    echo -en "${YELLOW}Reboot to fastboot? y/[n]: ${NC}"
+    read ans
+  fi
+  if [[ $ans == 'y' ]]; then
+    adb reboot bootloader &> /dev/null
+    if [[ $? != 0 ]]; then
+      stateA=('device' 'bootloader')
+      adb_wait 2 "${stateA[@]}"
+    fi
+    adb devices | grep -w "device" &> /dev/null
+    [[ $? == 0 ]] && adb reboot bootloader &> /dev/null
+  fi
+  if ! [[ $(fastboot devices) ]]; then
+    echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
+  fi
+  fastboot wait-for-device &> /dev/null
+  wait_for 3
+  slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
+  slot="$(echo $slot | sed "s/current-slot: //")"
+  echo -e "Currently on slot ${BLUE}${slot}${NC}"
+  slot2="a"
+  [[ $slot == "a" ]] && slot2="b"
+  if [[ $AUTO_SLOT == 1 ]]; then
+    ans=y
+  else
+    echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
+    read ans
+  fi
+  [[ $ans != 'n' ]] && fastboot --set-active=$slot2
+  # flashing
+  tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
+  fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
+  # after flash operations here (magisk as an example):
+  # fastboot flash boot magisk_patched*
+  if [[ $AUTO_REBOOT != 1 ]]; then
+    echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
+    read ans
+  else
+    ans=y
+  fi
+  if [[ $ans == 'y' ]]; then
+    wait_for 5
+    fastboot reboot
+  fi
+}
+
+# handles the upload flag (-h)
+handle_upload()
+{
+  tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> build"
+  echo -e "${GREEN}Uploading...${NC}"
+  isUploaded=0
+  if [[ -f $PATH_TO_BUILD_FILE ]]; then
+    start_time=$(date +"%s")
+    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
+    if [[ $? == 0 ]]; then
+      isUploaded=1
+      get_time
+    fi
+  fi
+  if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
+    echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
+    touch "${PATH_TO_BUILD_FILE}.sha256sum"
+    sha256sum "${PATH_TO_BUILD_FILE}" | cut -d ' ' -f1 > "${PATH_TO_BUILD_FILE}.sha256sum"
+    echo >> "${PATH_TO_BUILD_FILE}.sha256sum"
+  fi
+  eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
+  if [[ $isUploaded == 1 ]]; then
+    echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
+    if [[ $isSilent == 0 ]]; then
+      fileName=$(basename $PATH_TO_BUILD_FILE)
+      # Edit next line according to the way you fetch the link:
+      isFileLinkFailed=1
+      isMD5LinkFailed=1
+      if [[ $UPLOAD_LINK_CMD != "" ]]; then
+        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
+        fileLink=$(eval $cmd)
+        isFileLinkFailed=$?
+        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
+        md5Link=$(eval $cmd)
+        isMD5LinkFailed=$?
+      fi
+      if [[ $isFileLinkFailed == 0 ]]; then
+        echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
+        if [[ $isMD5LinkFailed == 0 ]]; then
+          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">SHA-256</a>"
+        elif [[ $isFileLinkFailed == 0 ]]; then
+          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+        else
+          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+<code>${buildTime}</code>"
+        fi
+      else
+        echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
+        tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
+      fi
+      if [[ $UPLOAD_DONE_MSG != '' ]]; then
+        tg_send "${UPLOAD_DONE_MSG}"
+      fi
+    fi
+    if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
+      eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
+      disown
+    fi
+    buildH=1
+  else
+    echo -e "${RED}Upload failed${NC}"
+    tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+    buildH=0
+  fi
+}
+
+# handles remaining build file
+handle_rm()
+{
+  if [[ $AUTO_RM_BUILD == 2 ]]; then
+    echo -en "${YELLOW}Remove original build file? [y]/n/A(lways)/N(ever): ${NC}"
+    read isRM
+    if [[ $isRM == 'A' ]]; then
+      config_write "AUTO_RM_BUILD" 1 $configFile
+      isRM='y'
+    elif [[ $isRM == 'N' ]]; then
+      config_write "AUTO_RM_BUILD" 0 $configFile
+      isRM='n'
+    fi
+  elif [[ $AUTO_RM_BUILD == 1 ]]; then
+    isRM='y'
+  else
+    isRM='n'
+  fi
+  if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
+    rm $PATH_TO_BUILD_FILE
+    rm $PATH_TO_BUILD_FILE.sha256sum
+    echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
+    exit 0
+  fi
 }
 
 # formats the time passed relative to $start_time and stores it in $buildTime
@@ -606,99 +990,10 @@ while [[ $# -gt 0 ]]; do
 done
 echo
 
-# Printing a table to summarize flags
-if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged != 0 ]] || [[ $configFile != "build.conf" ]]; then
-  echo -e "${YELLOW}----OVERRIDES----${NC}"
-fi
-[[ $configFile != "build.conf" ]] && echo -en "${RED}"
-echo -e "Config file  : ${BLUE}${configFile}${NC}"
-[[ $configFile != "build.conf" ]] && diff --color build.conf $configFile && echo "-----------------"
-[[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
-[[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
-[[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
-echo
-echo -e "${YELLOW}------BUILD------${NC}"
-[[ $isClean == 1 ]] && echo -en "${RED}"
-echo -e "Clean        : ${isClean}${NC}"
-[[ $installClean == 1 ]] && echo -en "${RED}"
-echo -e "Installclean : ${installClean}${NC}"
-[[ $isDry == 1 ]] && echo -en "${RED}"
-echo -e "Dry          : ${isDry}${NC}"
-echo
-echo -e "${YELLOW}------FILE-------${NC}"
-[[ $isUpload == 1 ]] && echo -en "${RED}"
-echo -e "Upload       : ${isUpload}${NC}"
-[[ $isPush == 1 ]] && echo -en "${RED}"
-echo -e "Push         : ${isPush}${NC}"
-[[ $isFastboot == 1 ]] && echo -en "${RED}"
-echo -e "Fastboot     : ${isFastboot}${NC}"
-[[ $isKeep == 1 ]] && echo -en "${RED}"
-echo -e "Keep file    : ${isKeep}${NC}"
-[[ $isMagisk == 1 ]] && echo -en "${RED}"
-echo -e "Magisk       : ${isMagisk}${NC}"
-echo
-echo -e "${YELLOW}-------ETC-------${NC}"
-[[ $isSilent == 1 ]] && echo -en "${RED}"
-echo -e "Silent       : ${isSilent}${NC}"
-[[ $powerOpt != 0 ]] && echo -en "${RED}"
-echo -e "Power        : ${powerOpt}${NC}"
+print_flags
+check_confs
+print_confs
 
-# checking configs (paths only, there's a limit for the spoonfeed)
-SOURCE_PATH=$(realpath "$SOURCE_PATH")
-if [[ ! -d $SOURCE_PATH ]]; then
-  echo -en "${RED}ERROR! Provided source path "
-  echo -e "${BLUE}${SOURCE_PATH}${RED} is invalid${NC}"
-  exit 1
-fi
-if [[ $UNHANDLED_PATH != '' ]]; then
-  UNHANDLED_PATH=$(realpath "$UNHANDLED_PATH")
-  if [[ ! -d $UNHANDLED_PATH ]]; then
-    echo -en "${RED}ERROR! Provided unhandled path "
-    echo -e "${BLUE}${UNHANDLED_PATH}${RED} is invalid${NC}"
-    exit 1
-  fi
-fi
-if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ ! -f $PRE_BUILD_SCRIPT ]]; then
-  echo -en "${RED}ERROR! Provided pre-build script "
-  echo -e "${BLUE}${PRE_BUILD_SCRIPT}${RED} does not exist${NC}"
-  exit 1
-fi
-if [[ $TG_SEND_CFG_FILE != '' ]] && [[ ! -f $TG_SEND_CFG_FILE ]]; then
-  echo -en "${RED}ERROR! Provided tlegram-send config "
-  echo -e "${BLUE}${TG_SEND_CFG_FILE}${RED} does not exist${NC}"
-  exit 1
-fi
-
-if [[ $WAS_INIT == 0 ]]; then # show not configured warning
-  echo -e "${RED}WARNING! Script configs were never initialized!${NC}"
-  echo -en "${GREEN}Please set ${BLUE}WAS_INIT${GREEN} to ${BLUE}1${GREEN} "
-  echo -e "in ${BLUE}build.config${GREEN} to hide this warning${NC}"
-  echo -e "${GREEN}You can also re run the script with ${BLUE}-i${GREEN} flag to do so"
-  wait_for 3
-fi
-
-echo
-echo -e "${YELLOW}-----CONFIGS-----${NC}"
-echo -e "Script dir             :${BLUE} ${PWD}${NC}"
-echo -e "Source dir             :${BLUE} ${SOURCE_PATH}${NC}"
-echo -e "Product name           :${BLUE} ${BUILD_PRODUCT_NAME}${NC}"
-echo -e "Upload destination     :${BLUE} ${UPLOAD_DEST}${NC}"
-echo -e "ADB push destination   :${BLUE} ${ADB_DEST_FOLDER}${NC}"
-if [[ $UNHANDLED_PATH != '' ]]; then
-  echo -e "Move build destination :${BLUE} ${UNHANDLED_PATH}${NC}"
-fi
-if [[ $UPLOAD_DONE_MSG != '' ]]; then
-  echo -e "Upload done message    :${BLUE} ${UPLOAD_DONE_MSG}${NC}"
-fi
-if [[ $FAILURE_MSG != '' ]]; then
-  echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
-fi
-if [[ $preBuildScripts != "" ]]; then
-  for script in ${preBuildScripts// / }; do
-    [[ ! -f $script ]] && continue
-    echo -e "Pre-build script       :${BLUE} ${script}${NC}"
-  done
-fi
 echo
 wait_for 5
 echo -e "${GREEN}Starting build${NC}"
@@ -720,7 +1015,6 @@ else
 fi
 
 # handle built file
-buildH=0 # build handled?
 if [[ $buildRes == 0 ]]; then # if build succeeded
   # Count build files:
   NOFiles=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
@@ -728,7 +1022,8 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $NOFiles -gt 1 ]]; then
     echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
     PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
-      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" | sed -n -e "1{p;q}")
+      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -printf "%B@;%h/%f\n" \
+      | sort -n | sed -n -e "1{p;q}" | cut -d ";" -f 2)
   elif [[ $NOFiles == 1 ]]; then
     PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
       -maxdepth 1 -type f -name "${BUILD_FILE_NAME}")
@@ -741,281 +1036,28 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $isDry == 0 ]]; then
     tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
   fi
+
+  buildH=0 # build handled? is set inside handle_* macros
+
   # magisk patching
   if [[ $isMagisk == 1 ]]; then
     magisk_patch
   fi
   # push build
   if [[ $isPush == 1 ]]; then
-    echo -e "${GREEN}Pushing...${NC}"
-    isOn=1 # Device is booted (reverse logic)
-    isRec=1 # Device is on recovery mode (reverse logic)
-    isPushed=1 # Weater the push went fine (reverse logic)
-    while [[ $isOn != 0 ]] && [[ $isRec != 0 ]] && [[ $isPushed != 0 ]]; do
-      adb_reset
-      adb devices | grep -w 'device' &> /dev/null
-      isOn=$?
-      adb devices | grep -w 'recovery' &> /dev/null
-      isRec=$?
-      sdcardPath=""
-      if [[ $isRec == 0 ]]; then
-        echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-        sdcardPath="/sdcard"
-      elif [[ $isOn == 0 ]]; then
-        echo -e "${GREEN}Device detected${NC}"
-        sdcardPath="/storage/emulated/0/"
-      else
-        if [[ $TWRP_SIDELOAD == 1 ]]; then
-          isPushed=0
-          buildH=1
-          break
-        fi
-        echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
-        read -n1 temp
-        echo
-      fi
-      if [[ $isRec != 0 ]] && [[ $isOn != 0 ]]; then
-        continue
-      fi
-      if [[ $TWRP_SIDELOAD == 1 ]]; then
-        isPushed=0
-        buildH=1
-        break
-      fi
-      adb push "${PATH_TO_BUILD_FILE}" "${sdcardPath}/${ADB_DEST_FOLDER}/"
-      isPushed=$?
-      if [[ $isPushed == 0 ]]; then
-        echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-        buildH=1
-      else
-        isOn=1
-        isRec=1
-        isPushed=1
-        echo -en "${RED}Push error (see output). Press any key to try again${NC}"
-        read -n1 temp
-        echo
-      fi
-    done
-    if [[ $isPushed == 0 ]]; then
-      if [[ $AUTO_REBOOT == 0 ]]; then
-        echo -en "${YELLOW}Flash now? y/[n]/A(lways): ${NC}"
-        read isFlash
-        if [[ $isFlash == 'A' ]]; then
-          config_write "AUTO_REBOOT" 1 $configFile
-          isFlash='y'
-        fi
-      else
-        isFlash='y'
-      fi
-      # flash build
-      if [[ $isFlash == 'y' ]]; then
-        tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
-        start_time=$(date +"%s")
-        if [[ $isOn == 0 ]]; then
-          echo -e "${GREEN}Rebooting to recovery${NC}"
-          adb reboot recovery
-          isDecrypted=0
-          if [[ $TWRP_SIDELOAD == 0 ]]; then
-            stateA=('recovery')
-            adb_wait 3 "${stateA[@]}"
-            echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-          fi
-          if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-            adb_reset
-            echo -e "${GREEN}Trying decryption with provided pin${NC}"
-            adb shell twrp decrypt $TWRP_PIN
-            if [[ $? == 0 ]]; then
-              isDecrypted=1
-              echo -e "${GREEN}Data decrypted${NC}"
-              wait_for 5
-              adb_reset
-            else
-              echo -e "${RED}Data decryption failed. Please try manually${NC}"
-            fi
-          fi
-          if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-            echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
-            read -n1 temp
-            echo
-            adb_reset
-          fi
-        else
-          adb_reset
-        fi
-        # Add extra pre-flash operations here
-        fileName=$(basename $PATH_TO_BUILD_FILE)
-        echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
-        isFlashed=1 # reverse logic
-        while [[ $isFlashed != 0 ]]; do
-          if [[ $TWRP_SIDELOAD == 1 ]]; then
-            stateA=('sideload')
-            adb_wait 3 "${stateA[@]}"
-            adb sideload $PATH_TO_BUILD_FILE
-            isFlashed=$?
-          else
-            adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
-            isFlashed=$?
-          fi
-          if [[ $isFlashed != 0 ]]; then
-            echo -e "${RED}Flash error. Press any key to try again."
-            echo -en "Press 'c' to continue anyway${NC}"
-            read -n1 temp
-            [[ $temp != 'c' ]] && continue
-          fi
-          # Add additional flash operations here (magisk provided as example)
-          # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
-        done
-        if [[ $AUTO_REBOOT == 0 ]]; then
-          echo -en "${YELLOW}Press any key to reboot${NC}"
-          read -n1 temp
-          echo
-        fi
-        adb reboot
-        get_time
-        tg-send "Flashing <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
-      fi
-    fi
+    handle_push
   fi
   # fastboot flash
   if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
-    ans='n'
-    if [[ $AUTO_REBOOT == 1 ]]; then
-      ans='y'
-    else
-      echo -en "${YELLOW}Reboot to fastboot? y/[n]: ${NC}"
-      read ans
-    fi
-    if [[ $ans == 'y' ]]; then
-      adb reboot bootloader &> /dev/null
-      if [[ $? != 0 ]]; then
-        stateA=('device' 'bootloader')
-        adb_wait 2 "${stateA[@]}"
-      fi
-      adb devices | grep -w "device" &> /dev/null
-      [[ $? == 0 ]] && adb reboot bootloader &> /dev/null
-    fi
-    if ! [[ $(fastboot devices) ]]; then
-      echo -e "${GREEN}Waiting for device in ${BLUE}bootloader${NC}"
-    fi
-    fastboot wait-for-device &> /dev/null
-    wait_for 3
-    slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
-    slot="$(echo $slot | sed "s/current-slot: //")"
-    echo -e "Currently on slot ${BLUE}${slot}${NC}"
-    slot2="a"
-    [[ $slot == "a" ]] && slot2="b"
-    if [[ $AUTO_SLOT == 1 ]]; then
-      ans=y
-    else
-      echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
-      read ans
-    fi
-    [[ $ans != 'n' ]] && fastboot --set-active=$slot2
-    # flashing
-    tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
-    fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
-    # after flash operations here (magisk as an example):
-    # fastboot flash boot magisk_patched*
-    if [[ $AUTO_REBOOT != 1 ]]; then
-      echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
-      read ans
-    else
-      ans=y
-    fi
-    if [[ $ans == 'y' ]]; then
-      wait_for 5
-      fastboot reboot
-    fi
+    handle_fastboot
   fi
   # upload build
   if [[ $isUpload == 1 ]]; then
-    tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> build"
-    echo -e "${GREEN}Uploading...${NC}"
-    isUploaded=0
-    if [[ -f $PATH_TO_BUILD_FILE ]]; then
-      start_time=$(date +"%s")
-      eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
-      if [[ $? == 0 ]]; then
-        isUploaded=1
-        get_time
-      fi
-    fi
-    if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
-      echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
-      touch "${PATH_TO_BUILD_FILE}.sha256sum"
-      sha256sum "${PATH_TO_BUILD_FILE}" | cut -d ' ' -f1 > "${PATH_TO_BUILD_FILE}.sha256sum"
-      echo >> "${PATH_TO_BUILD_FILE}.sha256sum"
-    fi
-    eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
-    if [[ $isUploaded == 1 ]]; then
-      echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
-      if [[ $isSilent == 0 ]]; then
-        fileName=$(basename $PATH_TO_BUILD_FILE)
-        # Edit next line according to the way you fetch the link:
-        isFileLinkFailed=1
-        isMD5LinkFailed=1
-        if [[ $UPLOAD_LINK_CMD != "" ]]; then
-          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
-          fileLink=$(eval $cmd)
-          isFileLinkFailed=$?
-          cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-          md5Link=$(eval $cmd)
-          isMD5LinkFailed=$?
-        fi
-        if [[ $isFileLinkFailed == 0 ]]; then
-          echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-          if [[ $isMD5LinkFailed == 0 ]]; then
-            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">SHA-256</a>"
-          elif [[ $isFileLinkFailed == 0 ]]; then
-            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
-          else
-            tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
-<code>${buildTime}</code>"
-          fi
-        else
-          echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
-          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
-        fi
-        if [[ $UPLOAD_DONE_MSG != '' ]]; then
-          tg_send "${UPLOAD_DONE_MSG}"
-        fi
-      fi
-      if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
-        eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
-        disown
-      fi
-      buildH=1
-    else
-      echo -e "${RED}Upload failed${NC}"
-      tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
-      buildH=0
-    fi
+    handle_upload
   fi
   # remove original build file
   if [[ $buildH == 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-    if [[ $AUTO_RM_BUILD == 2 ]]; then
-      echo -en "${YELLOW}Remove original build file? [y]/n/A(lways)/N(ever): ${NC}"
-      read isRM
-      if [[ $isRM == 'A' ]]; then
-        config_write "AUTO_RM_BUILD" 1 $configFile
-        isRM='y'
-      elif [[ $isRM == 'N' ]]; then
-        config_write "AUTO_RM_BUILD" 0 $configFile
-        isRM='n'
-      fi
-    elif [[ $AUTO_RM_BUILD == 1 ]]; then
-      isRM='y'
-    else
-      isRM='n'
-    fi
-    if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
-      rm $PATH_TO_BUILD_FILE
-      rm $PATH_TO_BUILD_FILE.sha256sum
-      echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
-      exit 0
-    fi
+    handle_rm
   fi
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
@@ -1041,9 +1083,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
 
   exit $([[ $isUpload == 0 ]] || [[ $isUploaded == 1 ]])
-fi
-# If build fails:
-if [[ $isSilent == 0 ]]; then
+elif [[ $isSilent == 0 ]]; then # if build failed
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
     tg_send "${SOURCE_PATH}/out/error.log"
@@ -1053,4 +1093,5 @@ if [[ $isSilent == 0 ]]; then
     tg_send "Build was canceled after <code>${buildTime}</code>."
   fi
 fi
-exit $buildRes
+
+exit $buildRes # only reach if build fails
