@@ -693,6 +693,12 @@ fi
 if [[ $FAILURE_MSG != '' ]]; then
   echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
 fi
+if [[ $preBuildScripts != "" ]]; then
+  for script in ${preBuildScripts// / }; do
+    [[ ! -f $script ]] && continue
+    echo -e "Pre-build script       :${BLUE} ${script}${NC}"
+  done
+fi
 echo
 wait_for 5
 echo -e "${GREEN}Starting build${NC}"
