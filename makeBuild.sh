@@ -379,7 +379,7 @@ magisk_patch()
   mflags="KEEPVERITY=true LEGACYSAR=true RECOVERYMODE=false"
   cryptoState=$(adb shell getprop ro.crypto.state)
   [[ $cryptoState == "encrypted" ]] && mflags="${mflags} KEEPFORCEENCRYPT=true"
-  if ls "${idir}/vbmeta.img" &>2 /dev/null; then
+  if ls "${idir}/vbmeta.img" &> /dev/null; then
     mflags="${mflags} PATCHVBMETAFLAG=true"
   fi
   echo -e "${GREEN}Pushing ${BLUE}boot.img${NC}"
