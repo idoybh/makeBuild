@@ -1,4 +1,5 @@
 *
 !.gitignore
 !makeBuild.sh
+!telegramSend.sh
 !README.md

@@ -74,9 +74,9 @@ tg_send()
       tgcmd="--config ${TG_SEND_CFG_FILE}"
     fi
     if [[ -f "${tgmsg}" ]]; then
-      telegram-send $tgcmd --file "${tgmsg}"
+      ./telegramSend.sh $tgcmd --file "${tgmsg}"
     else
-      telegram-send $tgcmd --disable-web-page-preview --format html "${tgmsg}"
+      ./telegramSend.sh $tgcmd --disable-preview "${tgmsg}"
     fi
   fi
 }
@@ -91,7 +91,7 @@ print_help()
   echo -e "${BLUE}-p${NC} for ADB push (and recovery flash)"
   echo -e "${BLUE}-f${NC} for fastboot flash"
   echo -e "${BLUE}-c${NC} for a clean build"
-  echo -e "${BLUE}-s${NC} to disable telegram-send bot"
+  echo -e "${BLUE}-s${NC} to disable sending telegram messages"
   echo -e "${BLUE}-d${NC} to perform a dry run (no build)"
   echo -e "${BLUE}--keep-file | -k${NC} to skip removal of original build file"
   echo -e "${BLUE}--power [ARG]${NC} to power off / reboot when done"

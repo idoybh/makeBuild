@@ -2,7 +2,7 @@
 Yet another build script for AOSP ROMs
 This script aims to be configurable for use with any ROM / environment, for your liking.  
 It currently supports uploading and or pushing the built file to a given path and it is color coded.   
-This script uses *[telegram-send](https://github.com/rahiel/telegram-send)* and sends Telegram messages with build status and time.
+This script uses *[Telegram bot HTTPS API](https://core.telegram.org/api#bot-api)* directly via *[curl](https://github.com/curl/curl)* and sends Telegram messages with build status and time.
 
 ## Flags
 You can start the script with the following flags:
@@ -12,7 +12,7 @@ You can start the script with the following flags:
 * **-p** to push the built file through adb (stands for push)
 * **-f** to flash built image files in $OUT through fastboot (stands for flash)
 * **-c** to make a clean build (stands for clean - duh)
-* **-s** to disable telegram-send (stands for silent)
+* **-s** to disable telegram messages (stands for silent)
 * **-d** to run without building (stands for dry)
 * **--keep-file | -k** to keep original build file where it is
 * **--magisk | -m** to patch the packed boot.img with magisk (must have magisk installed)
@@ -65,8 +65,15 @@ Set this to whatever command you use to get download links for uploaded files.
 Set to nothing to disable.  
 Set to `rclone link` by default.
 ##### TG_SEND_CFG_FILE
-Set this to a telegram-send config file path (relative or absolute), blank to use default.  
-Set to blank by default
+Set this to a telegram config file path (relative or absolute), blank to use default (`telegram.conf`).  
+Set to blank by default  
+The structure of the config file:  
+```text
+[Telegram]
+token = <bot token>
+chat_id = <chat id>
+```  
+To learn how to get `<bot token>` and `<chat id>` refer to [telegram docs](https://core.telegram.org/api#bot-api)
 ##### UPLOAD_DEST
 Set this to the upload destination **remote** folder.  
 It will be added at the very end of the upload command, after the local built file path.  
