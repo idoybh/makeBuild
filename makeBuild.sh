@@ -62,6 +62,7 @@ adb_wait()
 
 # sends a msg in telegram if not silent.
 # $1: the msg / file to send
+isCite=0 # global var so we don't cite the 1st msg
 tg_send()
 {
   tgmsg=$1
@@ -72,6 +73,11 @@ tg_send()
     tgcmd=''
     if [[ $TG_SEND_CFG_FILE != '' ]]; then
       tgcmd="--config ${TG_SEND_CFG_FILE}"
+    fi
+    if [[ $isCite == 1 ]]; then
+      tgcmd="${tgcmd} --cite"
+    else
+      isCite=1
     fi
     if [[ -f "${tgmsg}" ]]; then
       ./telegramSend.sh $tgcmd --file "${tgmsg}"
