@@ -62,27 +62,36 @@ adb_wait()
 
 # sends a msg in telegram if not silent.
 # $1: the msg / file to send
-isCite=0 # global var so we don't cite the 1st msg
+isEdit=0 # global var so we don't edit the 1st msg
+tmpDir="$(mktemp -d)/" # global var for the tmp file dir
+currMsg="" # a var that stores the current message for edits
 tg_send()
 {
   tgmsg=$1
   if [[ $isSilent == 0 ]]; then
     if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
-      eval $TG_SEND_PRIOR_CMD
+      eval "$TG_SEND_PRIOR_CMD"
     fi
-    tgcmd=''
+    tgcmd="--tmp ${tmpDir}"
     if [[ $TG_SEND_CFG_FILE != '' ]]; then
-      tgcmd="--config ${TG_SEND_CFG_FILE}"
+      tgcmd="${tgcmd} --config ${TG_SEND_CFG_FILE}"
     fi
-    if [[ $isCite == 1 ]]; then
-      tgcmd="${tgcmd} --cite"
-    else
-      isCite=1
+    if [[ $isEdit == 1 ]] && [[ ! -f "${tgmsg}" ]]; then
+      tgcmd="${tgcmd} --edit"
+    elif [[ ! -f "${tgmsg}" ]]; then
+      tgcmd="${tgcmd} --pin"
+      isEdit=1
     fi
     if [[ -f "${tgmsg}" ]]; then
-      ./telegramSend.sh $tgcmd --file "${tgmsg}"
+      # always unpin when we send a file (error)
+      currMsg=""
+      isEdit=0
+      ./telegramSend.sh $tgcmd --unpin " "
+      ./telegramSend.sh $tgcmd --file --cite "${tgmsg}"
     else
-      ./telegramSend.sh $tgcmd --disable-preview "${tgmsg}"
+      [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
+      currMsg="${currMsg}${tgmsg}"
+      ./telegramSend.sh $tgcmd --disable-preview "${currMsg}"
     fi
   fi
 }
@@ -746,8 +755,12 @@ handle_upload()
         echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
         tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
       fi
-      if [[ $UPLOAD_DONE_MSG != '' ]]; then
-        tg_send "${UPLOAD_DONE_MSG}"
+      # unpin as we are done!
+      if [[ $isSilent == 0 ]]; then
+        ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+      fi
+      if [[ $UPLOAD_DONE_MSG != '' ]] && [[ $isSilent == 0 ]]; then
+        ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${UPLOAD_DONE_MSG}"
       fi
     fi
     if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
@@ -758,6 +771,13 @@ handle_upload()
   else
     echo -e "${RED}Upload failed${NC}"
     tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+    # unpin as we are done!
+    if [[ $isSilent == 0 ]]; then
+      ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+      if [[ $FAILURE_MSG != '' ]]; then
+        ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${FAILURE_MSG}"
+      fi
+    fi
     buildH=0
   fi
 }
@@ -769,10 +789,10 @@ handle_rm()
     echo -en "${YELLOW}Remove original build file? [y]/n/A(lways)/N(ever): ${NC}"
     read isRM
     if [[ $isRM == 'A' ]]; then
-      config_write "AUTO_RM_BUILD" 1 $configFile
+      config_write "AUTO_RM_BUILD" 1 "${configFile}"
       isRM='y'
     elif [[ $isRM == 'N' ]]; then
-      config_write "AUTO_RM_BUILD" 0 $configFile
+      config_write "AUTO_RM_BUILD" 0 "${configFile}"
       isRM='n'
     fi
   elif [[ $AUTO_RM_BUILD == 1 ]]; then
@@ -781,9 +801,13 @@ handle_rm()
     isRM='n'
   fi
   if [[ $isRM != 'n' ]] && [[ $isKeep != 1 ]]; then
-    rm $PATH_TO_BUILD_FILE
-    rm $PATH_TO_BUILD_FILE.sha256sum
+    rm "${PATH_TO_BUILD_FILE}"
+    rm "${PATH_TO_BUILD_FILE}".sha256sum
     echo -e "${GREEN}Original build file (${BLUE}${PATH_TO_BUILD_FILE}${GREEN}) removed${NC}"
+    # unpin as we are done!
+    if [[ $isSilent == 0 ]]; then
+      ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+    fi
     exit 0
   fi
 }
@@ -875,12 +899,14 @@ typeChanged=0
 preBuildScripts=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h) # help
+    -h)
+    # help
     print_help
     shift
     exit 0
     ;;
-    -i) # initialize (write a new build.conf)
+    -i)
+    # initialize (write a new build.conf)
     init_conf
     echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
     read isExit
@@ -889,11 +915,13 @@ while [[ $# -gt 0 ]]; do
     fi
     shift
     ;;
-    -u) # upload / user build
+    -u)
+    # upload / user build
     isUpload=1
     shift
     ;;
-    -p) # push
+    -p)
+    # push
     isPush=1
     if [[ $flashConflict == 0 ]]; then
       flashConflict="-p"
@@ -903,7 +931,8 @@ while [[ $# -gt 0 ]]; do
     fi
     shift
     ;;
-    -f) # fastboot
+    -f)
+    # fastboot
     isFastboot=1
     if [[ $flashConflict == 0 ]]; then
       flashConflict="-f"
@@ -913,27 +942,33 @@ while [[ $# -gt 0 ]]; do
     fi
     shift
     ;;
-    -c) # clean
+    -c)
+    # clean
     isClean=1
     shift
     ;;
-    -s) # silent
+    -s)
+    # silent
     isSilent=1
     shift
     ;;
-    -d) # dry
+    -d)
+    # dry
     isDry=1
     shift
     ;;
-    "--keep-file"|-k) # keep original build file
+    "--keep-file"|-k)
+    # keep original build file
     isKeep=1
     shift
     ;;
-    "--magisk"|-m) # patch and pull magisk from boot
+    "--magisk"|-m)
+    # patch and pull magisk from boot
     isMagisk=1
     shift
     ;;
-    "--power") #power operations
+    "--power")
+    # power operations
     powerOpt=$2
     if [[ $powerOpt != "off" ]] && [[ $powerOpt != "reboot" ]]; then
       echo -e "${RED}ERROR! Power option not recognized.${NC}"
@@ -941,7 +976,8 @@ while [[ $# -gt 0 ]]; do
     fi
     shift 2
     ;;
-    "--choose") # diff lunch commands
+    "--choose")
+    # diff lunch commands
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--choose"
     else
@@ -952,7 +988,8 @@ while [[ $# -gt 0 ]]; do
     targetChanged=1
     shift 2
     ;;
-    "--product") # diff product fileName
+    "--product")
+    # diff product fileName
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--product"
     else
@@ -963,12 +1000,14 @@ while [[ $# -gt 0 ]]; do
     productChanged=1
     shift 2
     ;;
-    "--type") # diff build type command
+    "--type")
+    # diff build type command
     BUILD_TYPE_CMD=$2
     typeChanged=1
     shift 2
     ;;
-    "--config") # diff config file
+    "--config")
+    # diff config file
     if [[ $flagConflict == 0 ]]; then
       flagConflict="--config"
     else
@@ -979,15 +1018,18 @@ while [[ $# -gt 0 ]]; do
     load_config $configFile
     shift 2
     ;;
-    "--installclean"|"--i-c") # make installclean
+    "--installclean"|"--i-c")
+    # make installclean
     installClean=1
     shift
     ;;
-    "--script") # run a pre-build script
+    "--script")
+    # run a pre-build script
     preBuildScripts="${preBuildScripts}$2 "
     shift 2
     ;;
-    --*|-*) # unsupported flags
+    --*|-*)
+    # unsupported flags
     echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
     print_help
     exit 1
@@ -1065,6 +1107,12 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $buildH == 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
     handle_rm
   fi
+
+  # unpin as we are done!
+  if [[ $isSilent == 0 ]]; then
+    ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+  fi
+
   # Should only reach here if not handled yet
   if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
     mv $PATH_TO_BUILD_FILE "${UNHANDLED_PATH}"/
@@ -1092,11 +1140,17 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
 elif [[ $isSilent == 0 ]]; then # if build failed
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
-    tg_send "${SOURCE_PATH}/out/error.log"
-    [[ $FAILURE_MSG != '' ]] && tg_send "${FAILURE_MSG}"
+    tg_send "${SOURCE_PATH}/out/error.log" # unpins for us
+    if [[ $FAILURE_MSG != '' ]]; then
+      ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${FAILURE_MSG}"
+    fi
   else
     echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
     tg_send "Build was canceled after <code>${buildTime}</code>."
+    # unpin as we are done!
+    if [[ $isSilent == 0 ]]; then
+      ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+    fi
   fi
 fi
 
