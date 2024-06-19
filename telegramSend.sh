@@ -11,7 +11,9 @@ tmpDir="./"
 while [[ $# -gt 1 ]]; do
   case "$1" in
     "--config")
-    TG_SEND_CFG_FILE="$2"
+    if [[ "$2" != '' ]] && [[ -f "$2" ]]; then
+      TG_SEND_CFG_FILE="$2"
+    fi
     shift 2
     ;;
     "--file")
@@ -39,7 +41,9 @@ while [[ $# -gt 1 ]]; do
     shift 1
     ;;
     "--tmp")
-    tmpDir="$2"
+    if [[ "$2" != '' ]] && [[ -d "$2" ]]; then
+      tmpDir="$2"
+    fi
     shift 2
     ;;
     --*|-*)
