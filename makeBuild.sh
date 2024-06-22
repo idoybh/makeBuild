@@ -96,6 +96,30 @@ tg_send()
   fi
 }
 
+# tracks the build progress (requires a soong change) and sends it
+# meant to be started on a "thread"
+prog_send()
+{
+  initMsg="${currMsg}\n"
+  alt=":"
+  while true; do
+    sleep 5
+    [ ! -f "build_status.txt" ] && continue
+    [[ $(cat "build_status.txt") == "" ]] && continue
+    if [[ $alt == ":" ]]; then
+      alt=";"
+    else
+      alt=":"
+    fi
+    targets=$(cut -d "," -f 1 < "build_status.txt") || continue
+    percent=$(cut -d "," -f 2 < "build_status.txt") || continue
+    d=$(echo "$targets" | cut -d "/" -f 1) || continue
+    t=$(echo "$targets" | cut -d "/" -f 2) || continue
+    progMsg="${initMsg}[${d}/${t}] targets ${alt} ${percent}%" || continue
+    ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
+  done
+}
+
 # prints the help msg
 print_help()
 {
@@ -1054,10 +1078,18 @@ cd $SOURCE_PATH ||
 # build
 if [[ $isDry == 0 ]]; then
   pre_build
+  pid=""
+  if [[ $isSilent == 0 ]]; then
+    prog_send &
+    pid=$!
+  fi
   eval $BUILD_CMD # build
   # no commands allowed in here!
   buildRes=$? # save result (exit code)
   get_time
+  if [[ $isSilent == 0 ]] && [[ $pid != "" ]]; then
+    kill -TSTP "$pid"
+  fi
 else
   buildRes=0
 fi
