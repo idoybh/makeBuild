@@ -96,6 +96,25 @@ tg_send()
   fi
 }
 
+# returns a progress bar for a given % in $1
+# $1 percentage in decimal (out of 100)
+get_bar()
+{
+  per=$1
+  len=25
+  cLen=$(printf "%.0f" "$(echo "${len} * (${per} / 100)" | bc -l)")
+  bar="["
+  for ((i = 0; i < len; i++)); do
+    if [[ $i -lt $cLen ]]; then
+      bar="${bar}#"
+      continue
+    fi
+    bar="${bar}-"
+  done
+  bar="${bar}]"
+  echo "$bar"
+}
+
 # tracks the build progress (requires a soong change) and sends it
 # meant to be started on a "thread"
 prog_send()
@@ -113,9 +132,8 @@ prog_send()
     fi
     targets=$(cut -d "," -f 1 < "build_status.txt") || continue
     percent=$(cut -d "," -f 2 < "build_status.txt") || continue
-    d=$(echo "$targets" | cut -d "/" -f 1) || continue
-    t=$(echo "$targets" | cut -d "/" -f 2) || continue
-    progMsg="${initMsg}[${d}/${t}] targets ${alt} ${percent}%" || continue
+    progMsg="${initMsg}<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
+    progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
   done
 }
