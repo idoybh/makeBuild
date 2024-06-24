@@ -124,14 +124,17 @@ prog_send()
   while true; do
     sleep 5
     [ ! -f "build_status.txt" ] && continue
-    [[ $(cat "build_status.txt") == "" ]] && continue
+    statusTxt=$(cat "build_status.txt")
+    [[ $statusTxt == "" ]] && continue
+    ! grep -q "/" <<< "$statusTxt" && continue
+    ! grep -q "," <<< "$statusTxt" && continue
     if [[ $alt == ":" ]]; then
       alt=";"
     else
       alt=":"
     fi
-    targets=$(cut -d "," -f 1 < "build_status.txt") || continue
-    percent=$(cut -d "," -f 2 < "build_status.txt") || continue
+    targets=$(cut -d "," -f 1 <<< "$statusTxt") || continue
+    percent=$(cut -d "," -f 2 <<< "$statusTxt") || continue
     progMsg="${initMsg}<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
