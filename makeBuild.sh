@@ -102,7 +102,7 @@ get_bar()
 {
   per=$1
   len=25
-  cLen=$(printf "%.0f" "$(echo "${len} * (${per} / 100)" | bc -l)")
+  cLen=$(bc -l <<< "${len} * (${per} / 100)" | cut -d "." -f 1)
   bar="["
   for ((i = 0; i < len; i++)); do
     if [[ $i -lt $cLen ]]; then
@@ -112,6 +112,41 @@ get_bar()
     bar="${bar}-"
   done
   bar="${bar}]"
+  echo "$bar"
+}
+
+# returns some cpu & ccache details
+# $1 percentage in decimal (out of 100)
+get_stats()
+{
+  bar=""
+  sOut=$(sensors)
+  cUsage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+  cTemp=$(echo "$sOut" | grep "CPU Temperature" | tr -d -c "0-9.")
+  cCurr=$(echo "$sOut" | grep -i "CPU VRM Output Current" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/A//')
+  cVolt=$(echo "$sOut" | grep -m 1 -i "CPU Core Voltage" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/V//')
+  cWatt=$(echo "${cCurr} * ${cVolt}" | bc)
+  [[ $cUsage != "" ]] && bar="${bar}CPU: ${cUsage}"
+  if [[ $cTemp != "" ]]; then
+    echo "$bar" | grep -q "CPU"
+    [[ $? != 0 ]] && bar="${bar}CPU:"
+    bar="${bar} ${cTemp}°C"
+  fi
+  if [[ $cWatt != "" ]]; then
+    echo "$bar" | grep -q "CPU"
+    [[ $? != 0 ]] && bar="${bar}CPU:"
+    bar="${bar} ${cWatt}W"
+  fi
+  if [[ $USE_CCACHE == 1 ]]; then
+    sOut=$(ccache -s | grep size | cut -d ":" -f 2)
+    ccSize=$(echo "$sOut" | cut -d "/" -f 1 | tr -d -c "0-9.")
+    ccMax=$(echo "$sOut" | cut -d "/" -f 2 | cut -d "(" -f 1 | tr -d -c "0-9.")
+    if [[ $ccSize != "" ]]; then
+      bar="${bar}\nccache: ${ccSize}"
+      [[ $ccMax != "" ]] && bar="${bar}/${ccMax}"
+      bar="${bar} GB"
+    fi
+  fi
   echo "$bar"
 }
 
@@ -135,8 +170,9 @@ prog_send()
     fi
     targets=$(cut -d "," -f 1 <<< "$statusTxt") || continue
     percent=$(cut -d "," -f 2 <<< "$statusTxt") || continue
-    progMsg="${initMsg}<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
+    progMsg="${initMsg}\n<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
+    progMsg="${progMsg}\n\n<code>$(get_stats)</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
   done
 }
