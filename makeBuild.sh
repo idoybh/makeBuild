@@ -122,6 +122,7 @@ get_stats()
   sOut=$(sensors)
   cUsage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
   cTemp=$(echo "$sOut" | grep "CPU Temperature" | tr -d -c "0-9.")
+  ramInf=$(free -g -t | grep Total | cut -d ":" -f 2 | tr -s ' ' | sed "s/ //" | sed "s/ /:/g")
   cCurr=$(echo "$sOut" | grep -i "CPU VRM Output Current" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/A//')
   cVolt=$(echo "$sOut" | grep -m 1 -i "CPU Core Voltage" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/V//')
   cWatt=$(echo "${cCurr} * ${cVolt}" | bc)
@@ -135,6 +136,12 @@ get_stats()
     echo "$bar" | grep -q "CPU"
     [[ $? != 0 ]] && bar="${bar}CPU:"
     bar="${bar} ${cWatt}W"
+  fi
+  if [[ $ramInf != "" ]]; then
+    ramT=$(cut -d ":" -f 1 <<< "$ramInf")
+    ramU=$(cut -d ":" -f 2 <<< "$ramInf")
+    ramP=$(bc -l <<< "${ramU} * 100 / ${ramT}" | cut -d "." -f 1)
+    bar="${bar}\nRAM: ${ramU}/${ramT} GiB (${ramP}%)"
   fi
   if [[ $USE_CCACHE == 1 ]]; then
     sOut=$(ccache -s | grep size | cut -d ":" -f 2)
