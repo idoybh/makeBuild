@@ -116,7 +116,6 @@ get_bar()
 }
 
 # returns some cpu & ccache details
-# $1 percentage in decimal (out of 100)
 get_stats()
 {
   bar=""
@@ -173,6 +172,42 @@ prog_send()
     progMsg="${initMsg}\n<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     progMsg="${progMsg}\n\n<code>$(get_stats)</code>" || continue
+    ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
+  done
+}
+
+# tracks the upload progress and sends it
+# meant to be started on a "thread"
+# modify to match your utility if changed
+upload_prog_send()
+{
+  initMsg="${currMsg}\n"
+  alt=":"
+  while true; do
+    sleep 5
+    statusTxt=$(rclone rc core/stats | jq -r ".transferring?.[0]")
+    [[ $? != 0 ]] && continue
+    [[ $statusTxt == "" ]] && continue
+    [[ $statusTxt == "null" ]] && continue
+    ! grep -q "percentage" <<< "$statusTxt" && continue
+    ! grep -q "speed" <<< "$statusTxt" && continue
+    ! grep -q "eta" <<< "$statusTxt" && continue
+    percent=$(jq -r ".percentage" <<< "$statusTxt") || continue
+    speed=$(jq -r ".speed" <<< "$statusTxt" | cut -d "." -f 1) || continue
+    etaTime=$(jq -r ".eta" <<< "$statusTxt") || continue
+    [[ $percent == "" ]] && continue
+    [[ $speed == "" ]] && continue
+    [[ $etaTime == "" ]] && continue
+    if [[ $alt == ":" ]]; then
+      alt=";"
+    else
+      alt=":"
+    fi
+    speed=$(bc -l <<< "${speed} / 1000000")
+    speed=$(printf "%.2f" "${speed}")
+    etaTime="$(( etaTime / 60 ))m$(( etaTime % 60 ))s"
+    progMsg="${initMsg}\n<code>${speed} MiB/s ${alt} ETA ${etaTime} ${alt} ${percent}%</code>" || continue
+    progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
   done
 }
@@ -792,11 +827,17 @@ handle_upload()
   isUploaded=0
   if [[ -f $PATH_TO_BUILD_FILE ]]; then
     start_time=$(date +"%s")
+    pid=""
+    if [[ $isSilent == 0 ]]; then
+      upload_prog_send &
+      pid=$!
+    fi
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
     if [[ $? == 0 ]]; then
       isUploaded=1
       get_time
     fi
+    kill -TSTP "$pid"
   fi
   if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
     echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
