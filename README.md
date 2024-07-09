@@ -64,6 +64,12 @@ Set to `rclone copy -P` by default.
 Set this to whatever command you use to get download links for uploaded files.  
 Set to nothing to disable.  
 Set to `rclone link` by default.
+##### UPLOAD_LINK_ALT_CMD
+An alternative command to the one described above.  
+If `UPLOAD_LINK_CMD` fails or is empty the script will attempt running this instead.  
+As opposed to `UPLOAD_LINK_CMD` this one runs with no arguments added afterwards.  
+The expected output is of the form `[zip link][space][sha link]`  
+Set to nothing to disable. Set to nothing by default.
 ##### TG_SEND_CFG_FILE
 Set this to a telegram config file path (relative or absolute), blank to use default (`telegram.conf`).  
 Set to blank by default  

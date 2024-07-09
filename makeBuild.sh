@@ -284,6 +284,7 @@ rewrite_config()
   config_write "FILE_MANAGER_CMD" "${FILE_MANAGER_CMD}" $confPath
   config_write "UPLOAD_CMD" "${UPLOAD_CMD}" $confPath
   config_write "UPLOAD_LINK_CMD" "${UPLOAD_LINK_CMD}" $confPath
+  config_write "UPLOAD_LINK_ALT_CMD" "${UPLOAD_LINK_ALT_CMD}" $confPath
   config_write "TG_SEND_PRIOR_CMD" "${TG_SEND_PRIOR_CMD}" $confPath
   config_write "TG_SEND_CFG_FILE" "${TG_SEND_CFG_FILE}" $confPath
   config_write "UPLOAD_DEST" "${UPLOAD_DEST}" $confPath
@@ -372,6 +373,8 @@ init_conf()
   if [[ $UPLOAD_LINK_CMD == '' ]]; then
     UPLOAD_LINK_CMD='rclone link'
   fi
+  echo -en "${YELLOW}Enter upload link alternative command [${BLUE}none${YELLOW}]: ${NC}"
+  read UPLOAD_LINK_ALT_CMD
   echo -en "${YELLOW}Enter telegram send prior command [${BLUE}none${YELLOW}]: ${NC}"
   read TG_SEND_PRIOR_CMD
   echo -en "${YELLOW}Enter telegram send config file path [${BLUE}none${YELLOW}]: ${NC}"
@@ -859,20 +862,34 @@ handle_upload()
       fileName=$(basename $PATH_TO_BUILD_FILE)
       # Edit next line according to the way you fetch the link:
       isFileLinkFailed=1
-      isMD5LinkFailed=1
+      isSHALinkFailed=1
       if [[ $UPLOAD_LINK_CMD != "" ]]; then
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
         fileLink=$(eval $cmd)
         isFileLinkFailed=$?
         cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-        md5Link=$(eval $cmd)
-        isMD5LinkFailed=$?
+        shaLink=$(eval $cmd)
+        isSHALinkFailed=$?
+      fi
+      if [[ $isFileLinkFailed != 0 ]] && [[ $isSHALinkFailed != 0 ]] && [[ $UPLOAD_LINK_ALT_CMD != '' ]]; then
+        combinedLinks=$(eval $UPLOAD_LINK_ALT_CMD)
+        res1=$?
+        fileLink=$(echo "$combinedLinks" | cut -f 1 -d " ")
+        res2=$?
+        shaLink=$(echo "$combinedLinks" | cut -f 2 -d " ")
+        res3=$?
+        if [[ $res1 == 0 ]] && [[ $res2 == 0 ]] && [[ $fileLink != "" ]]; then
+          isFileLinkFailed=0
+        fi
+        if [[ $res1 == 0 ]] && [[ $res3 == 0 ]] && [[ $shaLink != "" ]]; then
+          isSHALinkFailed=0
+        fi
       fi
       if [[ $isFileLinkFailed == 0 ]]; then
         echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-        if [[ $isMD5LinkFailed == 0 ]]; then
+        if [[ $isSHALinkFailed == 0 ]]; then
           tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${md5Link}\">SHA-256</a>"
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${shaLink}\">SHA-256</a>"
         elif [[ $isFileLinkFailed == 0 ]]; then
           tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
