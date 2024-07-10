@@ -238,6 +238,7 @@ print_help()
   echo -e "${BLUE}--type [CMD]${NC} to change build type command"
   echo -e "${BLUE}--product [ARG]${NC} to change target product name"
   echo -e "${BLUE}--config [FILE]${NC} to select a different config file"
+  echo -e "${BLUE}--tg-config [FILE]${NC} to select a different telegram config file"
   echo -e "${BLUE}--installclean | --i-c${NC} to run ${BLUE}make installclean${NC} before the build"
   echo -e "${GREEN}Default configuration file: ${BLUE}build.conf${NC}"
   echo -en "${GREEN}For more help visit: "
@@ -519,7 +520,7 @@ check_confs()
 # Prints a table to summarize flags
 print_flags()
 {
-  if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged != 0 ]] || [[ $configFile != "build.conf" ]]; then
+  if [[ $productChanged != 0 ]] || [[ $targetChanged != 0 ]] || [[ $typeChanged != 0 ]] || [[ $tgConfigChanged != 0 ]] || [[ $configFile != "build.conf" ]]; then
     echo -e "${YELLOW}----OVERRIDES----${NC}"
   fi
   [[ $configFile != "build.conf" ]] && echo -en "${RED}"
@@ -528,6 +529,7 @@ print_flags()
   [[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
   [[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
   [[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
+  [[ $tgConfigChanged != 0 ]] && echo  -e "${RED}TG config   : ${TG_SEND_CFG_FILE}${NC}"
   echo
   echo -e "${YELLOW}------BUILD------${NC}"
   [[ $isClean == 1 ]] && echo -en "${RED}"
@@ -1042,6 +1044,7 @@ flashConflict=0
 productChanged=0
 targetChanged=0
 typeChanged=0
+tgConfigChanged=0
 preBuildScripts=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -1162,6 +1165,12 @@ while [[ $# -gt 0 ]]; do
     fi
     configFile=$2
     load_config $configFile
+    shift 2
+    ;;
+    "--tg-config")
+    # diff telegram config file
+    TG_SEND_CFG_FILE=$2
+    tgConfigChanged=1
     shift 2
     ;;
     "--installclean"|"--i-c")
