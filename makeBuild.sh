@@ -529,7 +529,7 @@ print_flags()
   [[ $productChanged != 0 ]] && echo -e "${RED}Product      : ${BUILD_PRODUCT_NAME}${NC}"
   [[ $targetChanged != 0 ]] && echo -e "${RED}Type cmd     : ${BUILD_TYPE_CMD}${NC}"
   [[ $typeChanged != 0 ]] && echo -e "${RED}Target cmd   : ${TARGET_CHOOSE_CMD}${NC}"
-  [[ $tgConfigChanged != 0 ]] && echo  -e "${RED}TG config   : ${TG_SEND_CFG_FILE}${NC}"
+  [[ $tgConfigChanged != 0 ]] && echo -e "${RED}TG config    : ${TG_SEND_CFG_FILE}${NC}"
   echo
   echo -e "${YELLOW}------BUILD------${NC}"
   [[ $isClean == 1 ]] && echo -en "${RED}"
@@ -849,7 +849,7 @@ handle_upload()
       isUploaded=1
       get_time
     fi
-    kill -TSTP "$pid"
+    kill -TERM "$pid"
   fi
   if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
     echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
@@ -1219,7 +1219,7 @@ if [[ $isDry == 0 ]]; then
   buildRes=$? # save result (exit code)
   get_time
   if [[ $isSilent == 0 ]] && [[ $pid != "" ]]; then
-    kill -TSTP "$pid"
+    kill -TERM "$pid"
   fi
 else
   buildRes=0
