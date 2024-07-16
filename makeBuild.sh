@@ -40,9 +40,14 @@ adb_wait()
     done
     echo -e "${outp} state${NC}"
   fi
+  waitCount=0
   isDet=1 # reversed logic
   while [[ $isDet != 0 ]]; do # wait until detected
     for i in "${!states[@]}"; do
+      if [[ $waitCount -gt 0 ]]; then
+        tg_send "Waiting for device"
+      fi
+      waitCount=$(( waitCount + 1 ))
       if [[ ${states[$i]} == 'bootloader' ]] || [[ ${states[$i]} == 'fastboot' ]]; then
         if [[ $(fastboot devices) ]]; then
           isDet=0
@@ -618,6 +623,7 @@ magisk_patch()
 {
   stateA=('device')
   adb_wait 1 "${stateA[@]}"
+  tg_send "Patching boot.img with magisk"
   echo -e "${GREEN}Magisk patching${NC}"
   echo -e "${GREEN}Env setup${NC}"
   idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
