@@ -593,27 +593,36 @@ print_confs()
 # performs required pre build operations
 pre_build()
 {
+  tg_send "[pre-build] Preparing env for <code>${BUILD_PRODUCT_NAME}</code>"
   source "${SOURCE_PATH}/build/envsetup.sh"
   eval $TARGET_CHOOSE_CMD # target
   if [[ $isClean == 1 ]]; then
     echo -e "${GREEN}Cleaning build${NC}"
+    tg_send "[pre-build] Cleaning build</code>"
     eval $CLEAN_CMD
   fi
   if [[ $installClean == 1 ]]; then
+    echo -e "${GREEN}Running installclean${NC}"
+    tg_send "[pre-build] Running installclean"
     make installclean
   fi
   if [[ $BUILD_TYPE_CMD != '' ]]; then
     eval $BUILD_TYPE_CMD # build type
   fi
   if [[ $PRE_BUILD_SCRIPT != '' ]] && [[ -f $PRE_BUILD_SCRIPT ]]; then
-    source $PRE_BUILD_SCRIPT
+    echo -e "${GREEN}Running ${BLUE}${PRE_BUILD_SCRIPT}${NC}"
+    tg_send "[pre-build] Running <code>${PRE_BUILD_SCRIPT}</code>"
+    source "${PRE_BUILD_SCRIPT}"
   fi
   if [[ $preBuildScripts != '' ]]; then
     for script in ${preBuildScripts// / }; do
       [[ ! -f $script ]] && continue
+      echo -e "${GREEN}Running ${BLUE}${script}${NC}"
+      tg_send "[pre-build] Running <code>${script}</code>"
       source "${script}"
     done
   fi
+  currMsg="" # edit over pre-build ops
   tg_send "Build started for <code>${BUILD_PRODUCT_NAME}</code>"
   start_time=$(date +"%s")
 }
@@ -716,7 +725,7 @@ handle_push()
     fi
     # flash build
     if [[ $isFlash == 'y' ]]; then
-      tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
+      tg_send "Flashing build"
       start_time=$(date +"%s")
       if [[ $isOn == 0 ]]; then
         echo -e "${GREEN}Rebooting to recovery${NC}"
@@ -779,7 +788,7 @@ handle_push()
       fi
       adb reboot
       get_time
-      tg-send "Flashing <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
+      tg-send "Flashing done in <code>${buildTime}</code>"
     fi
   fi
 }
@@ -821,7 +830,7 @@ handle_fastboot()
   fi
   [[ $ans != 'n' ]] && fastboot --set-active=$slot2
   # flashing
-  tg_send "Flashing <code>${BUILD_PRODUCT_NAME}</code> build"
+  tg_send "Flashing build via fastboot"
   fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
   # after flash operations here (magisk as an example):
   # fastboot flash boot magisk_patched*
@@ -840,7 +849,7 @@ handle_fastboot()
 # handles the upload flag (-h)
 handle_upload()
 {
-  tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> build"
+  tg_send "Uploading build"
   echo -e "${GREEN}Uploading...${NC}"
   isUploaded=0
   if [[ -f $PATH_TO_BUILD_FILE ]]; then
@@ -896,18 +905,18 @@ handle_upload()
       if [[ $isFileLinkFailed == 0 ]]; then
         echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
         if [[ $isSHALinkFailed == 0 ]]; then
-          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+          tg_send "Uploading done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${shaLink}\">SHA-256</a>"
         elif [[ $isFileLinkFailed == 0 ]]; then
-          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+          tg_send "Uploading done in \
 <code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
         else
-          tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in \
+          tg_send "Uploading done in \
 <code>${buildTime}</code>"
         fi
       else
         echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
-        tg_send "Uploading <code>${BUILD_PRODUCT_NAME}</code> done in <code>${buildTime}</code>"
+        tg_send "Uploading done in <code>${buildTime}</code>"
       fi
       # unpin as we are done!
       if [[ $isSilent == 0 ]]; then
@@ -924,7 +933,7 @@ handle_upload()
     buildH=1
   else
     echo -e "${RED}Upload failed${NC}"
-    tg_send "Upload failed for <code>${BUILD_PRODUCT_NAME}</code>"
+    tg_send "Upload failed"
     # unpin as we are done!
     if [[ $isSilent == 0 ]]; then
       ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
@@ -1251,7 +1260,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   fi
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
   if [[ $isDry == 0 ]]; then
-    tg_send "Build done for <code>${BUILD_PRODUCT_NAME}</code> in <code>${buildTime}</code>"
+    tg_send "Build done in <code>${buildTime}</code>"
   fi
 
   buildH=0 # build handled? is set inside handle_* macros
