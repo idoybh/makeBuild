@@ -41,11 +41,13 @@ adb_wait()
     echo -e "${outp} state${NC}"
   fi
   waitCount=0
+  waitSent=0
   isDet=1 # reversed logic
   while [[ $isDet != 0 ]]; do # wait until detected
     for i in "${!states[@]}"; do
-      if [[ $waitCount -gt 0 ]]; then
+      if [[ $waitCount -gt 0 ]] && [[ $waitSent == 0 ]]; then
         tg_send "Waiting for device"
+        waitSent=1
       fi
       waitCount=$(( waitCount + 1 ))
       if [[ ${states[$i]} == 'bootloader' ]] || [[ ${states[$i]} == 'fastboot' ]]; then
