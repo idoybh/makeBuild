@@ -133,20 +133,28 @@ get_stats()
   cWatt=$(echo "${cCurr} * ${cVolt}" | bc)
   [[ $cUsage != "" ]] && bar="${bar}CPU: ${cUsage}"
   if [[ $cTemp != "" ]]; then
-    echo "$bar" | grep -q "CPU"
-    [[ $? != 0 ]] && bar="${bar}CPU:"
+    if ! echo "$bar" | grep -q "CPU"; then
+      bar="${bar}CPU:"
+    fi
     bar="${bar} ${cTemp}°C"
   fi
   if [[ $cWatt != "" ]]; then
-    echo "$bar" | grep -q "CPU"
-    [[ $? != 0 ]] && bar="${bar}CPU:"
+    if ! echo "$bar" | grep -q "CPU"; then
+      bar="${bar}CPU:"
+    fi
     bar="${bar} ${cWatt}W"
+  fi
+  if echo "$bar" | grep -q "CPU"; then
+    cPer="${cUsage//%/}"
+    pBar="$(get_bar ${cPer})"
+    bar="${bar}\n${pBar}"
   fi
   if [[ $ramInf != "" ]]; then
     ramT=$(cut -d ":" -f 1 <<< "$ramInf")
     ramU=$(cut -d ":" -f 2 <<< "$ramInf")
     ramP=$(bc -l <<< "${ramU} * 100 / ${ramT}" | cut -d "." -f 1)
-    bar="${bar}\nRAM: ${ramU}/${ramT} GiB (${ramP}%)"
+    pBar="$(get_bar ${ramP})"
+    bar="${bar}\nRAM: ${ramU}/${ramT} GiB (${ramP}%)\n${pBar}"
   fi
   if [[ $USE_CCACHE == 1 ]]; then
     sOut=$(ccache -s | grep size | cut -d ":" -f 2)
