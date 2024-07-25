@@ -317,6 +317,7 @@ rewrite_config()
   config_write "FAILURE_MSG" "${FAILURE_MSG}" $confPath
   config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
   config_write "TWRP_SIDELOAD" "${TWRP_SIDELOAD}" $confPath
+  config_write "FASTBOOT_PKG" "${FASTBOOT_PKG}" $confPath
 }
 
 # loads given config file
@@ -480,6 +481,14 @@ init_conf()
     TWRP_SIDELOAD=1
   else
     TWRP_SIDELOAD=0
+  fi
+  echo -en "${YELLOW}Fastboot package flashing ? "
+  echo -en "[${BLUE}y${YELLOW}]/n: ${NC}"
+  read FASTBOOT_PKG
+  if [[ $FASTBOOT_PKG = 'n' ]]; then
+    FASTBOOT_PKG=0
+  else
+    FASTBOOT_PKG=1
   fi
   echo -e "${RED}Note! If you chose 'n' settings will only persist for current session${NC}"
   echo -en "${YELLOW}Write current config to file? [${BLUE}y${YELLOW}]/n: ${NC}"
@@ -842,7 +851,15 @@ handle_fastboot()
   # flashing
   tg_send "Flashing build via fastboot"
   start_time=$(date +"%s")
-  fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
+  if [[ $FASTBOOT_PKG != 1 ]]; then
+    for img in ./out/target/product/"${BUILD_PRODUCT_NAME}"/obj/PACKAGING/target_files_intermediates/*_*"${BUILD_PRODUCT_NAME}"-target_files/IMAGES/*.img; do
+      [[ $img == "userdata" ]] && continue
+      partName=$(basename "${img}" | sed 's/.img//')
+      fastboot flash "${partName}" "${img}"
+    done
+  else
+    fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
+  fi
   # after flash operations here (magisk as an example):
   # fastboot flash boot magisk_patched*.img
   get_time

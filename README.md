@@ -143,6 +143,10 @@ Set to `0` by default.
 Set this to `1` to use ADB sideload instead of pushing.  
 Will use [UNHANDLED_PATH](#unhandled_path) when done.  
 Set to blank (no value) by default.
+##### FASTBOOT_PKG
+Set this to `0` (or blank) to flash images from $OUT instead of a fastboot package (zip) when using the -f option.  
+Useful when building an OTA for release but still wanting to flash via fastboot.  
+Set to `1` by default.
 
 ## Output color coding
 * *Red* for errors / warnings
