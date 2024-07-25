@@ -841,9 +841,11 @@ handle_fastboot()
   [[ $ans != 'n' ]] && fastboot --set-active=$slot2
   # flashing
   tg_send "Flashing build via fastboot"
+  start_time=$(date +"%s")
   fastboot update --skip-reboot --skip-secondary $PATH_TO_BUILD_FILE
   # after flash operations here (magisk as an example):
-  # fastboot flash boot magisk_patched*
+  # fastboot flash boot magisk_patched*.img
+  get_time
   if [[ $AUTO_REBOOT != 1 ]]; then
     echo -en "${YELLOW}Continue boot now? y/[n]: ${NC}"
     read ans
@@ -854,6 +856,7 @@ handle_fastboot()
     wait_for 5
     fastboot reboot
   fi
+  tg_send "Flashing done in <code>${buildTime}</code>"
 }
 
 # handles the upload flag (-h)
