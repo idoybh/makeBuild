@@ -179,6 +179,7 @@ prog_send()
   alt=":"
   while true; do
     sleep 5
+    trap "" SIGTERM
     [ ! -f "build_status.txt" ] && continue
     statusTxt=$(cat "build_status.txt")
     [[ $statusTxt == "" ]] && continue
@@ -195,6 +196,7 @@ prog_send()
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     progMsg="${progMsg}\n\n<code>$(get_stats)</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
+    trap - SIGTERM
   done
 }
 
@@ -207,6 +209,7 @@ upload_prog_send()
   alt=":"
   while true; do
     sleep 5
+    trap "" SIGTERM
     statusTxt=$(rclone rc core/stats | jq -r ".transferring?.[0]")
     [[ $? != 0 ]] && continue
     [[ $statusTxt == "" ]] && continue
@@ -231,6 +234,7 @@ upload_prog_send()
     progMsg="${initMsg}\n<code>${speed} MiB/s ${alt} ETA ${etaTime} ${alt} ${percent}%</code>" || continue
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
+    trap - SIGTERM
   done
 }
 
@@ -894,7 +898,12 @@ handle_upload()
       isUploaded=1
       get_time
     fi
-    kill -TERM "$pid"
+    if [[ $isSilent == 0 ]] && [[ $pid != "" ]]; then
+      while ps -p "$pid" > /dev/null; do
+        kill -TERM "$pid"
+        sleep 0.5
+      done
+    fi
   fi
   if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
     echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
@@ -1264,7 +1273,10 @@ if [[ $isDry == 0 ]]; then
   buildRes=$? # save result (exit code)
   get_time
   if [[ $isSilent == 0 ]] && [[ $pid != "" ]]; then
-    kill -TERM "$pid"
+    while ps -p "$pid" > /dev/null; do
+      kill -TERM "$pid"
+      sleep 0.5
+    done
   fi
 else
   buildRes=0
