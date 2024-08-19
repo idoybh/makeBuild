@@ -123,6 +123,8 @@ get_bar()
 }
 
 # returns some cpu & ccache details
+pccFiles=-1
+pccFlag=0
 get_stats()
 {
   bar=""
@@ -162,10 +164,22 @@ get_stats()
     sOut=$(ccache -s | grep size | cut -d ":" -f 2)
     ccSize=$(echo "$sOut" | cut -d "/" -f 1 | tr -d -c "0-9.")
     ccMax=$(echo "$sOut" | cut -d "/" -f 2 | cut -d "(" -f 1 | tr -d -c "0-9.")
+    ccFiles=$(ccache -s -v | grep Files | cut -d ":" -f 2 | tr -d -c "0-9")
     if [[ $ccSize != "" ]]; then
       bar="${bar}\nccache: ${ccSize}"
       [[ $ccMax != "" ]] && bar="${bar}/${ccMax}"
       bar="${bar} GB"
+      if [[ $ccFiles != "" ]]; then
+        bar="${bar}\n${ccFiles}"
+        if [[ $pccFiles != -1 ]] && [[ $pccFiles -gt $ccFiles ]]; then
+          bar="${bar}↑"
+          pccFlag=1
+        elif [[ $pccFlag == 1 ]]; then
+          bar="${bar}⤒"
+        fi
+        bar="${bar} files"
+        pccFiles=$ccFiles
+      fi
     fi
   fi
   echo "$bar"
