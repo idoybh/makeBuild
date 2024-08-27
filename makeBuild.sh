@@ -67,6 +67,24 @@ adb_wait()
   done
 }
 
+# waits until device is unlocked unlocked
+# $1: (optional) delay between scans in seconds (defaults to 1)
+# $2: (optional) path to check (defaults to /sdcard/)
+adb_wait_unlocked()
+{
+  delay=$1
+  [[ $delay == "" ]] && delay=1
+  cPath=$2
+  [[ $cPath == "" ]] && cPath="/sdcard/"
+  echo -e "${GREEN}Waiting for an unlocked device${NC}"
+  isUnlocked=1 # reversed logic
+  while [[ $isUnlocked != 0 ]]; do
+    adb shell "ls ${cPath}" &> /dev/null
+    isUnlocked=$?
+    sleep $delay
+  done
+}
+
 # sends a msg in telegram if not silent.
 # $1: the msg / file to send
 isEdit=0 # global var so we don't edit the 1st msg
@@ -669,6 +687,7 @@ magisk_patch()
 {
   stateA=('device')
   adb_wait 1 "${stateA[@]}"
+  adb_wait_unlocked
   tg_send "Patching boot.img with magisk"
   echo -e "${GREEN}Magisk patching${NC}"
   echo -e "${GREEN}Env setup${NC}"
@@ -716,7 +735,7 @@ handle_push()
       sdcardPath="/sdcard"
     elif [[ $isOn == 0 ]]; then
       echo -e "${GREEN}Device detected${NC}"
-      sdcardPath="/storage/emulated/0/"
+      sdcardPath="/storage/emulated/0"
     else
       if [[ $TWRP_SIDELOAD == 1 ]]; then
         isPushed=0
@@ -728,6 +747,7 @@ handle_push()
       echo
     fi
     if [[ $isRec != 0 ]] && [[ $isOn != 0 ]]; then
+      sleep 1
       continue
     fi
     if [[ $TWRP_SIDELOAD == 1 ]]; then
@@ -735,6 +755,7 @@ handle_push()
       buildH=1
       break
     fi
+    adb_wait_unlocked 1 "${sdcardPath}"
     adb push "${PATH_TO_BUILD_FILE}" "${sdcardPath}/${ADB_DEST_FOLDER}/"
     isPushed=$?
     if [[ $isPushed == 0 ]]; then
