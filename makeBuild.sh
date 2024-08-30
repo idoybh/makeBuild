@@ -104,6 +104,7 @@ tg_send()
     if [[ $isEdit == 1 ]] && [[ ! -f "${tgmsg}" ]]; then
       tgcmd="${tgcmd} --edit"
     elif [[ ! -f "${tgmsg}" ]]; then
+      trap tg_clean SIGINT
       tgcmd="${tgcmd} --pin"
       isEdit=1
     fi
@@ -113,12 +114,23 @@ tg_send()
       isEdit=0
       ./telegramSend.sh $tgcmd --unpin " "
       ./telegramSend.sh $tgcmd --file --cite "${tgmsg}"
+      trap - SIGINT
     else
       [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
       currMsg="${currMsg}${tgmsg}"
       ./telegramSend.sh $tgcmd --disable-preview "${currMsg}"
     fi
   fi
+}
+
+# shellcheck disable=SC2317
+function tg_clean()
+{
+  [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
+  currMsg="${currMsg}Script was stopped / canceled externally"
+  ./telegramSend.sh --tmp "${tmpDir}" --edit --disable-preview "${currMsg}"
+  ./telegramSend.sh --tmp "${tmpDir}" --unpin " "
+  exit 1
 }
 
 # returns a progress bar for a given % in $1
@@ -928,6 +940,7 @@ handle_upload()
       upload_prog_send &
       pid=$!
     fi
+    trap - SIGINT # upload is a long external command with own cancellation handling
     eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE} ${UPLOAD_DEST}"
     if [[ $? == 0 ]]; then
       isUploaded=1
@@ -938,6 +951,7 @@ handle_upload()
         kill -TERM "$pid"
         sleep 0.5
       done
+      trap tg_clean SIGINT
     fi
   fi
   if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
@@ -995,6 +1009,7 @@ handle_upload()
       # unpin as we are done!
       if [[ $isSilent == 0 ]]; then
         ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+        trap - SIGINT
       fi
       if [[ $UPLOAD_DONE_MSG != '' ]] && [[ $isSilent == 0 ]]; then
         ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${UPLOAD_DONE_MSG}"
@@ -1011,6 +1026,7 @@ handle_upload()
     # unpin as we are done!
     if [[ $isSilent == 0 ]]; then
       ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+      trap - SIGINT
       if [[ $FAILURE_MSG != '' ]]; then
         ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${FAILURE_MSG}"
       fi
@@ -1044,6 +1060,7 @@ handle_rm()
     # unpin as we are done!
     if [[ $isSilent == 0 ]]; then
       ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+      trap - SIGINT
     fi
     exit 0
   fi
@@ -1303,6 +1320,7 @@ if [[ $isDry == 0 ]]; then
     prog_send &
     pid=$!
   fi
+  trap - SIGINT # build is a long external command with own cancellation handling
   eval $BUILD_CMD # build
   # no commands allowed in here!
   buildRes=$? # save result (exit code)
@@ -1312,6 +1330,7 @@ if [[ $isDry == 0 ]]; then
       kill -TERM "$pid"
       sleep 0.5
     done
+    trap tg_clean SIGINT
   fi
 else
   buildRes=0
@@ -1366,6 +1385,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # unpin as we are done!
   if [[ $isSilent == 0 ]]; then
     ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+    trap - SIGINT
   fi
 
   # Should only reach here if not handled yet
@@ -1405,6 +1425,7 @@ elif [[ $isSilent == 0 ]]; then # if build failed
     # unpin as we are done!
     if [[ $isSilent == 0 ]]; then
       ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+      trap - SIGINT
     fi
   fi
 fi
