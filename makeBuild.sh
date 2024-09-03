@@ -92,7 +92,7 @@ tmpDir="$(mktemp -d)/" # global var for the tmp file dir
 currMsg="" # a var that stores the current message for edits
 tg_send()
 {
-  tgmsg=$1
+  local tgmsg=$1
   if [[ $isSilent == 0 ]]; then
     if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
       eval "$TG_SEND_PRIOR_CMD"
@@ -128,8 +128,14 @@ function tg_clean()
 {
   [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
   currMsg="${currMsg}Script was stopped / canceled externally"
-  ./telegramSend.sh --tmp "${tmpDir}" --edit --disable-preview "${currMsg}"
-  ./telegramSend.sh --tmp "${tmpDir}" --unpin " "
+  local tgcmd="--tmp ${tmpDir} --edit --disable-preview"
+  local upintgcmd="--tmp ${tmpDir} --unpin"
+  if [[ $TG_SEND_CFG_FILE != '' ]]; then
+    tgcmd="${tgcmd} --config ${TG_SEND_CFG_FILE}"
+    upintgcmd="${upintgcmd} --config ${TG_SEND_CFG_FILE}"
+  fi
+  ./telegramSend.sh $tgcmd "${currMsg}"
+  ./telegramSend.sh $upintgcmd " "
   exit 1
 }
 
@@ -201,7 +207,7 @@ get_stats()
       bar="${bar} GB"
       if [[ $ccFiles != "" ]]; then
         bar="${bar}\n${ccFiles}"
-        if [[ $pccFiles != -1 ]] && [[ $pccFiles -gt $ccFiles ]]; then
+        if [[ $pccFiles != -1 ]] && [[ $ccFiles -gt $pccFiles ]]; then
           bar="${bar}↑"
           pccFlag=1
         elif [[ $pccFlag == 1 ]]; then
@@ -665,7 +671,7 @@ pre_build()
   eval $TARGET_CHOOSE_CMD # target
   if [[ $isClean == 1 ]]; then
     echo -e "${GREEN}Cleaning build${NC}"
-    tg_send "[pre-build] Cleaning build</code>"
+    tg_send "[pre-build] Cleaning build"
     eval $CLEAN_CMD
   fi
   if [[ $installClean == 1 ]]; then

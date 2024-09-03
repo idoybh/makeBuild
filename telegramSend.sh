@@ -2,6 +2,10 @@
 TG_SEND_CFG_FILE="telegram.conf"
 LAST_MSG_ID_FILE="lastMsgId.txt"
 
+# Colors
+RED="\033[1;31m" # For errors / warnings
+NC="\033[0m" # reset color
+
 isFile=0
 isPreview=1
 isCite=0
@@ -61,10 +65,15 @@ idFile="${tmpDir}${LAST_MSG_ID_FILE}"
 mId=$(cat "${idFile}")
 
 if [[ $isPin == -1 ]]; then
-  curl -s -X POST \
+  out=$(curl -s -X POST \
     -H 'Content-Type: application/json' \
     -d "{\"chat_id\": \"${CHAT_ID}\", \"message_id\": \"${mId}\"}" \
-    https://api.telegram.org/bot"${TOKEN}"/unpinChatMessage &> /dev/null
+    https://api.telegram.org/bot"${TOKEN}"/unpinChatMessage)
+  isOK=$(echo "$out" | jq -r .ok)
+  if [[ $isOK != "true" ]]; then
+    echo -e "${RED}Failed unpinning msg${NC}"
+    echo "$out" | jq
+  fi
   exit 0
 fi
 
@@ -72,9 +81,15 @@ if [[ $isFile == 1 ]]; then # no edit here!
   params=""
   [[ $isPreview == 0 ]] && params="&disable_web_page_preview=True"
   [[ $isCite == 1 ]] && params="${params}&reply_to_message_id=${mId}"
-  curl -s -F document=@"${MSG}" \
-    https://api.telegram.org/bot$TOKEN/sendDocument?chat_id="${CHAT_ID}""${params}" \
-    | jq -r .result | jq -r .message_id > "${idFile}"
+  out=$(curl -s -F document=@"${MSG}" \
+    https://api.telegram.org/bot$TOKEN/sendDocument?chat_id="${CHAT_ID}""${params}")
+  isOK=$(echo "$out" | jq -r .ok)
+  if [[ $isOK != "true" ]]; then
+    echo -e "${RED}Failed sending file${NC}"
+    echo "$out" | jq
+  else
+    echo "$out" | jq -r .result | jq -r .message_id > "${idFile}"
+  fi
   exit 0
 fi
 
@@ -86,15 +101,26 @@ params="{\"chat_id\": \"${CHAT_ID}\", \"text\": \"${MSG}\", \"parse_mode\": \"HT
 [[ $isCite == 1 ]] && params="${params}, \"reply_to_message_id\": \"${mId}\""
 [[ $isEdit == 1 ]] && params="${params}, \"message_id\": \"${mId}\""
 params="${params}}"
-curl -s -X POST \
+out=$(curl -s -X POST \
   -H 'Content-Type: application/json' \
   -d "${params}" \
-  https://api.telegram.org/bot"${TOKEN}/${op}" \
-  | jq -r .result | jq -r .message_id > "${idFile}"
+  https://api.telegram.org/bot"${TOKEN}/${op}")
+isOK=$(echo "$out" | jq -r .ok)
+if [[ $isOK != "true" ]]; then
+  echo -e "${RED}Failed sending msg${NC}"
+  echo "$out" | jq
+else
+  echo "$out" | jq -r .result | jq -r .message_id > "${idFile}"
+fi
 
 if [[ $isPin == 1 ]]; then
-  curl -s -X POST \
+  out=$(curl -s -X POST \
     -H 'Content-Type: application/json' \
     -d "{\"chat_id\": \"${CHAT_ID}\", \"message_id\": \"$(cat "${idFile}")\", \"disable_notification\": \"true\"}" \
-    https://api.telegram.org/bot"${TOKEN}"/pinChatMessage &> /dev/null
+    https://api.telegram.org/bot"${TOKEN}"/pinChatMessage)
+  isOK=$(echo "$out" | jq -r .ok)
+  if [[ $isOK != "true" ]]; then
+    echo -e "${RED}Failed pinning msg${NC}"
+    echo "$out" | jq
+  fi
 fi
