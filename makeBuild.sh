@@ -240,10 +240,12 @@ prog_send()
     else
       alt=":"
     fi
+    get_time
     targets=$(cut -d "," -f 1 <<< "$statusTxt") || continue
     percent=$(cut -d "," -f 2 <<< "$statusTxt") || continue
     progMsg="${initMsg}\n<code>[${targets}] targets ${alt} ${percent}%</code>" || continue
     progMsg="${progMsg}\n<code>$(get_bar "$percent")</code>" || continue
+    progMsg="${progMsg}\nTime running: <code>${buildTime}</code>" || continue
     progMsg="${progMsg}\n\n<code>$(get_stats)</code>" || continue
     ./telegramSend.sh --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" --edit --disable-preview "${progMsg}" || continue
     trap - SIGTERM
