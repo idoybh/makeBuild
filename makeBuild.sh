@@ -67,7 +67,7 @@ adb_wait()
   done
 }
 
-# waits until device is unlocked unlocked
+# waits until device is unlocked
 # $1: (optional) delay between scans in seconds (defaults to 1)
 # $2: (optional) path to check (defaults to /sdcard/)
 adb_wait_unlocked()
@@ -370,6 +370,7 @@ rewrite_config()
   config_write "AUTO_REBOOT" "${AUTO_REBOOT}" $confPath
   config_write "AUTO_SLOT" "${AUTO_REBOOT}" $confPath
   config_write "UPLOAD_DONE_MSG" "${UPLOAD_DONE_MSG}" $confPath
+  config_write "HANDLE_DONE_MSG" "${HANDLE_DONE_MSG}" $confPath
   config_write "FAILURE_MSG" "${FAILURE_MSG}" $confPath
   config_write "TWRP_PIN" "${TWRP_PIN}" $confPath
   config_write "TWRP_SIDELOAD" "${TWRP_SIDELOAD}" $confPath
@@ -525,6 +526,8 @@ init_conf()
   fi
   echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
   read UPLOAD_DONE_MSG
+  echo -en "${YELLOW}Set extra handling done message [${BLUE}blank${YELLOW}]: ${NC}"
+  read HANDLE_DONE_MSG
   echo -en "${YELLOW}Set extra failure message [${BLUE}blank${YELLOW}]: ${NC}"
   read FAILURE_MSG
   echo -en "${YELLOW}Set TWRP decryption pin "
@@ -653,6 +656,9 @@ print_confs()
   fi
   if [[ $UPLOAD_DONE_MSG != '' ]]; then
     echo -e "Upload done message    :${BLUE} ${UPLOAD_DONE_MSG}${NC}"
+  fi
+  if [[ $HANDLE_DONE_MSG != '' ]]; then
+    echo -e "Handling done message  :${BLUE} ${HANDLE_DONE_MSG}${NC}"
   fi
   if [[ $FAILURE_MSG != '' ]]; then
     echo -e "Failure message        :${BLUE} ${FAILURE_MSG}${NC}"
@@ -1394,6 +1400,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   if [[ $isSilent == 0 ]]; then
     ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
     trap - SIGINT
+  fi
+
+  if [[ $HANDLE_DONE_MSG != '' ]] && [[ $isSilent == 0 ]] && [[ $isUpload != 1 ]]; then
+    ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${HANDLE_DONE_MSG}"
   fi
 
   # Should only reach here if not handled yet
