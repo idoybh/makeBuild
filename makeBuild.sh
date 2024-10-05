@@ -1347,6 +1347,7 @@ if [[ $isDry == 0 ]]; then
     trap tg_clean SIGINT
   fi
 else
+  tg_send "Job started for <code>${BUILD_PRODUCT_NAME}</code>"
   buildRes=0
 fi
 
