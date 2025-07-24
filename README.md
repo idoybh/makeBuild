@@ -123,8 +123,12 @@ Set this to `1` to skip waiting for a keypress on each reboot.
 This will make the script automatically reboot from and to recovery.  
 Set to `0` by default.
 ##### AUTO_SLOT
-Set this to `1` to automatically switch slots on fastboot flash (see `-f` in [Flags](#Flags)).  
-Set to `0` by default.
+Controls whether to automatically switch slots on fastboot flash (see `-f` in [Flags](#Flags)).  
+Possible values are:
+* `0` to never switch slots before flashing (w/o asking).
+* `1` to always switch slots before flashing (w/o asking).
+* `2` to always ask whether to switch slots before flashing (will prompt to change the default).  
+Set to `2` by default.
 ##### UPLOAD_DONE_MSG
 Set this to an extra message you want to send when the upload is done.  
 A good option may be a tag list or a link to changelog.  

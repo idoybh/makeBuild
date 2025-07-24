@@ -561,12 +561,14 @@ init_conf()
     AUTO_REBOOT=0
   fi
   echo -en "${YELLOW}Automatically switch slots on fastboot flash? "
-  echo -en "y/[${BLUE}n${YELLOW}]: ${NC}"
+  echo -en "y/[${BLUE}n${YELLOW}]/N(ever): ${NC}"
   read AUTO_SLOT
   if [[ $AUTO_SLOT == 'y' ]]; then
     AUTO_SLOT=1
-  else
+  elif [[ $AUTO_SLOT == 'N' ]]; then
     AUTO_SLOT=0
+  else
+    AUTO_SLOT=2
   fi
   echo -en "${YELLOW}Set extra upload message [${BLUE}blank${YELLOW}]: ${NC}"
   read UPLOAD_DONE_MSG
@@ -951,12 +953,23 @@ handle_fastboot()
   slot2="a"
   [[ $slot == "a" ]] && slot2="b"
   if [[ $AUTO_SLOT == 1 ]]; then
-    ans=y
-  else
-    echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n: ${NC}"
+    ans='y'
+  elif [[ $AUTO_SLOT == 2 ]]; then
+    echo -en "${YELLOW}Switch to slot ${BLUE}${slot2}${YELLOW}? [y]/n/A(lways)/N(ever): ${NC}"
     read ans
+    if [[ $ans == 'A' ]]; then
+      config_write "AUTO_SLOT" 1 "${configFile}"
+      ans='y'
+    elif [[ $ans == 'N' ]]; then
+      config_write "AUTO_SLOT" 0 "${configFile}"
+      ans='n'
+    elif [[ $ans != 'n' ]]; then
+      ans='y'
+    fi
+  else
+    ans='n'
   fi
-  [[ $ans != 'n' ]] && fastboot --set-active=$slot2
+  [[ $ans == 'y' ]] && fastboot --set-active=$slot2
   # flashing
   tg_send "Flashing build via fastboot"
   start_time=$(date +"%s")
