@@ -22,7 +22,7 @@ adb_wait()
   shift
   states=("$@")
   if [[ ${#states[@]} == 1 ]]; then
-    state=${states[$i]}
+    state=${states[0]}
     if [[ $state != 'device' ]]; then
       echo -e "${GREEN}Waiting for device in ${BLUE}${state}${NC}"
     else
@@ -50,10 +50,23 @@ adb_wait()
         waitSent=1
       fi
       waitCount=$(( waitCount + 1 ))
-      if [[ ${states[$i]} == 'bootloader' ]] || [[ ${states[$i]} == 'fastboot' ]]; then
+      if [[ ${states[$i]} == "bootloader" ]]; then
         if [[ $(fastboot devices) ]]; then
-          isDet=0
-          break
+          fVars=$(fastboot getvar is-userspace &> /dev/stdout)
+          if grep -q "is-userspace: no" <<< "${fVars}"; then
+            isDet=0
+            break
+          fi
+        fi
+        continue
+      fi
+      if [[ ${states[$i]} == "fastbootd" ]]; then
+        if [[ $(fastboot devices) ]]; then
+          fVars=$(fastboot getvar is-userspace &> /dev/stdout)
+          if grep -q "is-userspace: yes" <<< "${fVars}"; then
+            isDet=0
+            break
+          fi
         fi
         continue
       fi
