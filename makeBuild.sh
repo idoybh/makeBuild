@@ -692,6 +692,8 @@ print_flags()
   echo -e "Keep file    : ${isKeep}${NC}"
   [[ $isMagisk == 1 ]] && echo -en "${RED}"
   echo -e "Magisk       : ${isMagisk}${NC}"
+  [[ $isPKSU == 1 ]] && echo -en "${RED}"
+  echo -e "P.KSU        : ${isPKSU}${NC}"
   echo
   echo -e "${YELLOW}-------ETC-------${NC}"
   [[ $isSilent == 1 ]] && echo -en "${RED}"
@@ -799,6 +801,52 @@ magisk_patch()
   adb pull "/sdcard/Download/magisk_patched-${ver}.img" ./ || exit 1
   fpath=$(realpath "./magisk_patched-${ver}.img")
   echo -e "${GREEN}Magisk patching done. Image: ${BLUE}${fpath}${NC}"
+}
+
+# preserve images for KSU in an updatepkg
+preserve_ksu()
+{
+  echo -e "${GREEN}Preserving KSU images${NC}"
+  echo -e "${GREEN}Env setup${NC}"
+  local iDir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
+  local dateStr=$(date +%Y%m%d)
+  local zipdir=$(mktemp -d)
+  local zipname="KSU-${dateStr}"
+  local images=(
+    "boot.img"
+    "dtbo.img"
+    "init_boot.img"
+    "recovery.img"
+    "system_dlkm.img"
+    "vendor_boot.img"
+    "vendor_dlkm.img"
+  )
+  # Write fastboot-info.txt directly
+  {
+    echo "# fastboot-info for yaap_waffle"
+    echo "version 1"
+    echo "flash boot"
+    echo "flash init_boot"
+    echo "flash dtbo"
+    echo "flash recovery"
+    echo "reboot fastboot"
+    echo "flash system_dlkm"
+    echo "flash vendor_boot"
+    echo "flash vendor_dlkm"
+  } > "$zipdir/fastboot-info.txt"
+  # Add the images from out
+  echo -e "${GREEN}Copying images${NC}"
+  for image in "${images[@]}"; do
+    # shellcheck disable=SC2086
+    cp $iDir/"$image" "${zipdir}/"
+  done
+  cp "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/android-info.txt" "${zipdir}/"
+  [ -f "$zipname" ] && rm "$zipname"
+  # create the zip
+  echo -e "${GREEN}Zipping images${NC}"
+  zip -j "$zipname" "$zipdir"/*
+  rm -rf "$zipdir"
+  echo -e "${GREEN}Created ${BLUE}${zipname}${NC}"
 }
 
 # handles the push flag (-p)
@@ -1227,6 +1275,7 @@ isSilent=0
 isDry=0
 isKeep=0
 isMagisk=0
+isPKSU=0
 powerOpt=0
 installClean=0
 flagConflict=0
@@ -1304,6 +1353,11 @@ while [[ $# -gt 0 ]]; do
     "--magisk"|-m)
     # patch and pull magisk from boot
     isMagisk=1
+    shift
+    ;;
+    "--pksu")
+    # preserve images for KSU in an updatepkg
+    isPKSU=1
     shift
     ;;
     "--power")
@@ -1449,6 +1503,10 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   # magisk patching
   if [[ $isMagisk == 1 ]]; then
     magisk_patch
+  fi
+  # prerserve KSU
+  if [[ $isPKSU == 1 ]]; then
+    preserve_ksu
   fi
   # push build
   if [[ $isPush == 1 ]]; then
