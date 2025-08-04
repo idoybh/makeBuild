@@ -18,6 +18,7 @@ adb_reset()
 # $2: device states array
 adb_wait()
 {
+  tput bel
   delay=$1
   shift
   states=("$@")
@@ -85,6 +86,7 @@ adb_wait()
 # $2: (optional) path to check (defaults to /sdcard/)
 adb_wait_unlocked()
 {
+  tput bel
   delay=$1
   [[ $delay == "" ]] && delay=1
   cPath=$2
@@ -982,6 +984,7 @@ handle_push()
       tg-send "Flashing done in <code>${buildTime}</code>"
     fi
   fi
+  tput bel
 }
 
 # handles the fastboot flag (-f)
@@ -1057,6 +1060,7 @@ handle_fastboot()
     fastboot reboot
   fi
   tg_send "Flashing done in <code>${buildTime}</code>"
+  tput bel
 }
 
 # handles the upload flag (-h)
@@ -1165,6 +1169,7 @@ handle_upload()
     fi
     buildH=0
   fi
+  tput bel
 }
 
 # handles remaining build file
@@ -1496,6 +1501,7 @@ if [[ $buildRes == 0 ]]; then # if build succeeded
   echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
   if [[ $isDry == 0 ]]; then
     tg_send "Build done in <code>${buildTime}</code>"
+    tput bel
   fi
 
   buildH=0 # build handled? is set inside handle_* macros
