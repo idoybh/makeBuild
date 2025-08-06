@@ -1583,4 +1583,6 @@ elif [[ $isSilent == 0 ]]; then # if build failed
   fi
 fi
 
-exit $buildRes # only reach if build fails
+# only reach if build fails
+tput bel
+exit $buildRes
