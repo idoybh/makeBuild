@@ -19,18 +19,18 @@ adb_reset()
 adb_wait()
 {
   tput bel
-  delay=$1
+  local delay=$1
   shift
-  states=("$@")
+  local states=("$@")
   if [[ ${#states[@]} == 1 ]]; then
-    state=${states[0]}
+    local state=${states[0]}
     if [[ $state != 'device' ]]; then
       echo -e "${GREEN}Waiting for device in ${BLUE}${state}${NC}"
     else
       echo -e "${GREEN}Waiting for device${NC}"
     fi
   else
-    outp="${GREEN}Waiting for device in"
+    local outp="${GREEN}Waiting for device in"
     for i in "${!states[@]}"; do
       [[ $i -gt 0 ]] && outp="${outp} or"
       if [[ ${states[$i]} == 'device' ]]; then
@@ -41,9 +41,9 @@ adb_wait()
     done
     echo -e "${outp} state${NC}"
   fi
-  waitCount=0
-  waitSent=0
-  isDet=1 # reversed logic
+  local waitCount=0
+  local waitSent=0
+  local isDet=1 # reversed logic
   while [[ $isDet != 0 ]]; do # wait until detected
     for i in "${!states[@]}"; do
       if [[ $waitCount -gt 0 ]] && [[ $waitSent == 0 ]]; then
@@ -53,7 +53,7 @@ adb_wait()
       waitCount=$(( waitCount + 1 ))
       if [[ ${states[$i]} == "bootloader" ]]; then
         if [[ $(fastboot devices) ]]; then
-          fVars=$(fastboot getvar is-userspace &> /dev/stdout)
+          local fVars=$(fastboot getvar is-userspace &> /dev/stdout)
           if grep -q "is-userspace: no" <<< "${fVars}"; then
             isDet=0
             break
@@ -63,7 +63,7 @@ adb_wait()
       fi
       if [[ ${states[$i]} == "fastbootd" ]]; then
         if [[ $(fastboot devices) ]]; then
-          fVars=$(fastboot getvar is-userspace &> /dev/stdout)
+          local fVars=$(fastboot getvar is-userspace &> /dev/stdout)
           if grep -q "is-userspace: yes" <<< "${fVars}"; then
             isDet=0
             break
@@ -87,12 +87,12 @@ adb_wait()
 adb_wait_unlocked()
 {
   tput bel
-  delay=$1
+  local delay=$1
   [[ $delay == "" ]] && delay=1
-  cPath=$2
+  local cPath=$2
   [[ $cPath == "" ]] && cPath="/sdcard/"
   echo -e "${GREEN}Waiting for an unlocked device${NC}"
-  isUnlocked=1 # reversed logic
+  local isUnlocked=1 # reversed logic
   while [[ $isUnlocked != 0 ]]; do
     adb shell "ls ${cPath}" &> /dev/null
     isUnlocked=$?
@@ -108,37 +108,39 @@ currMsg="" # a var that stores the current message for edits
 tg_send()
 {
   local tgmsg=$1
-  if [[ $isSilent == 0 ]]; then
-    if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
-      eval "$TG_SEND_PRIOR_CMD"
-    fi
-    tgcmd="--tmp ${tmpDir}"
-    if [[ $TG_SEND_CFG_FILE != '' ]]; then
-      tgcmd="${tgcmd} --config ${TG_SEND_CFG_FILE}"
-    fi
-    if [[ $isEdit == 1 ]] && [[ ! -f "${tgmsg}" ]]; then
-      tgcmd="${tgcmd} --edit"
-    elif [[ ! -f "${tgmsg}" ]]; then
-      trap tg_clean SIGINT
-      tgcmd="${tgcmd} --pin"
-      isEdit=1
-    fi
-    if [[ -f "${tgmsg}" ]]; then
-      # always unpin when we send a file (error)
-      currMsg=""
-      isEdit=0
-      ./telegramSend.sh $tgcmd --unpin " "
-      ./telegramSend.sh $tgcmd --file --cite "${tgmsg}"
-      trap - SIGINT
-    else
-      [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
-      currMsg="${currMsg}${tgmsg}"
-      ./telegramSend.sh $tgcmd --disable-preview "${currMsg}"
-    fi
+  if [[ $isSilent != 0 ]]; then
+    return
   fi
+  if [[ $TG_SEND_PRIOR_CMD != '' ]]; then
+    eval "$TG_SEND_PRIOR_CMD"
+  fi
+  local tgcmd="--tmp ${tmpDir}"
+  if [[ $TG_SEND_CFG_FILE != '' ]]; then
+    tgcmd="${tgcmd} --config ${TG_SEND_CFG_FILE}"
+  fi
+  if [[ $isEdit == 1 ]] && [[ ! -f "${tgmsg}" ]]; then
+    tgcmd="${tgcmd} --edit"
+  elif [[ ! -f "${tgmsg}" ]]; then
+    trap tg_clean SIGINT
+    tgcmd="${tgcmd} --pin"
+    isEdit=1
+  fi
+  if [[ -f "${tgmsg}" ]]; then
+    # always unpin when we send a file (error)
+    currMsg=""
+    isEdit=0
+    ./telegramSend.sh $tgcmd --unpin " "
+    ./telegramSend.sh $tgcmd --file --cite "${tgmsg}"
+    trap - SIGINT
+    return
+  fi
+  [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
+  currMsg="${currMsg}${tgmsg}"
+  ./telegramSend.sh $tgcmd --disable-preview "${currMsg}"
 }
 
 # shellcheck disable=SC2317
+# shellcheck disable=SC2329
 function tg_clean()
 {
   [[ $currMsg != "" ]] && currMsg="${currMsg}\n"
@@ -158,9 +160,9 @@ function tg_clean()
 # $1 percentage in decimal (out of 100)
 get_bar()
 {
-  per=$1
-  len=25
-  cLen=$(bc -l <<< "${len} * (${per} / 100)" | cut -d "." -f 1)
+  local per=$1
+  local len=25
+  local cLen=$(bc -l <<< "${len} * (${per} / 100)" | cut -d "." -f 1)
   bar="["
   for ((i = 0; i < len; i++)); do
     if [[ $i -lt $cLen ]]; then
@@ -176,11 +178,11 @@ get_bar()
 # returns min max and avg cpu core speeds
 get_cpu_speeds()
 {
-  outp=$(cat /proc/cpuinfo | grep MHz | tr -dc '[. [:digit:]]' | xargs | tr ' ' '\n')
-  max=0
-  min=0
-  count=0
-  sum=0
+  local outp=$(cat /proc/cpuinfo | grep MHz | tr -dc '[. [:digit:]]' | xargs | tr ' ' '\n')
+  local max=0
+  local min=0
+  local count=0
+  local sum=0
   while read -r num; do
     num=$(echo $num | cut -d '.' -f 1)
     if [[ $count == 0 ]]; then
@@ -195,15 +197,15 @@ get_cpu_speeds()
     sum=$(( $sum + $num ))
     (( count++ ))
   done <<< "$outp"
-  avg=$(( $sum / $count ))
+  local avg=$(( $sum / $count ))
   avg=$(echo "scale=2; ${avg} / 1000" | bc -l)
   min=$(echo "scale=2; ${min} / 1000" | bc -l)
   max=$(echo "scale=2; ${max} / 1000" | bc -l)
   if [[ $min == "" ]] || [[ $max == "" ]] || [[ $avg == "" ]]; then
     echo ""
-  else 
-    echo "GHz: ↑${max} ↓${min} ⨏${avg}"
+    return
   fi
+  echo "GHz: ↑${max} ↓${min} ⨏${avg}"
 }
 
 # returns some cpu & ccache details
@@ -211,16 +213,14 @@ pccFiles=-1
 pccFlag=0
 get_stats()
 {
-  bar=""
-  sOut=$(sensors)
-  cUsage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
-  cTemp=$(echo "$sOut" | grep "Tctl" | tr -d -c "0-9.")
-  ramInf=$(free -g -t | grep Total | cut -d ":" -f 2 | tr -s ' ' | sed "s/ //" | sed "s/ /:/g")
-  ramTmp=$(sensors -A spd5118-i2c-8-52 | grep ":" | cut -d "(" -f 1 | cut -d ":" -f 2 | tr -d -c "0-9.°C")
-  cCurr=$(echo "$sOut" | grep -i "CPU VRM Output Current" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/A//')
-  cVolt=$(echo "$sOut" | grep -m 1 -i "CPU Core Voltage" | cut -d ":" -f 2 | sed 's/ //g' | sed 's/V//')
-  cWatt=$(echo "${cCurr} * ${cVolt}" | bc)
-  cSpeeds=$(get_cpu_speeds)
+  local bar=""
+  local sOut=$(sensors)
+  local cUsage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+  local cTemp=$(echo "$sOut" | grep "Tctl" | tr -d -c "0-9.")
+  local ramInf=$(free -g -t | grep Total | cut -d ":" -f 2 | tr -s ' ' | sed "s/ //" | sed "s/ /:/g")
+  local ramTmp=$(sensors -A spd5118-i2c-9-52 | grep ":" | cut -d "(" -f 1 | cut -d ":" -f 2 | tr -d -c "0-9.°C")
+  local cWatt=$(corefreq-cli -W 1 | tail -n2 | xargs | cut -d " " -f 2 | cut -d "." -f 1)
+  local cSpeeds=$(get_cpu_speeds)
   [[ $cUsage != "" ]] && bar="${bar}CPU: ${cUsage}"
   if [[ $cTemp != "" ]]; then
     if ! echo "$bar" | grep -q "CPU"; then
@@ -255,28 +255,34 @@ get_stats()
     pBar="$(get_bar ${ramP})"
     bar="${bar}\nRAM: ${ramP}% (${ramU}/${ramT}GiB) ${ramTmp}\n${pBar}\n"
   fi
-  if [[ $USE_CCACHE == 1 ]]; then
-    sOut=$(ccache -s | grep size | cut -d ":" -f 2)
-    ccSize=$(echo "$sOut" | cut -d "/" -f 1 | tr -d -c "0-9.")
-    ccMax=$(echo "$sOut" | cut -d "/" -f 2 | cut -d "(" -f 1 | tr -d -c "0-9.")
-    ccFiles=$(ccache -s -v | grep Files | cut -d ":" -f 2 | tr -d -c "0-9")
-    if [[ $ccSize != "" ]]; then
-      bar="${bar}\nccache: ${ccSize}"
-      [[ $ccMax != "" ]] && bar="${bar}/${ccMax}"
-      bar="${bar} GB"
-      if [[ $ccFiles != "" ]]; then
-        bar="${bar}\n${ccFiles}"
-        if [[ $pccFiles != -1 ]] && [[ $ccFiles -gt $pccFiles ]]; then
-          bar="${bar}↑"
-          pccFlag=1
-        elif [[ $pccFlag == 1 ]]; then
-          bar="${bar}⤒"
-        fi
-        bar="${bar} files"
-        pccFiles=$ccFiles
-      fi
-    fi
+  if [[ $USE_CCACHE != 1 ]]; then
+    echo "$bar"
+    return
   fi
+  sOut=$(ccache -s | grep size | cut -d ":" -f 2)
+  local ccSize=$(echo "$sOut" | cut -d "/" -f 1 | tr -d -c "0-9.")
+  local ccMax=$(echo "$sOut" | cut -d "/" -f 2 | cut -d "(" -f 1 | tr -d -c "0-9.")
+  local ccFiles=$(ccache -s -v | grep Files | cut -d ":" -f 2 | tr -d -c "0-9")
+  if [[ $ccSize == "" ]]; then
+    echo "$bar"
+    return
+  fi
+  bar="${bar}\nccache: ${ccSize}"
+  [[ $ccMax != "" ]] && bar="${bar}/${ccMax}"
+  bar="${bar} GB"
+  if [[ $ccFiles == "" ]]; then
+    echo "$bar"
+    return
+  fi
+  bar="${bar}\n${ccFiles}"
+  if [[ $pccFiles != -1 ]] && [[ $ccFiles -gt $pccFiles ]]; then
+    bar="${bar}↑"
+    pccFlag=1
+  elif [[ $pccFlag == 1 ]]; then
+    bar="${bar}⤒"
+  fi
+  bar="${bar} files"
+  pccFiles=$ccFiles
   echo "$bar"
 }
 
@@ -380,10 +386,10 @@ print_help()
 # $2: config file name
 config_read()
 {
-  rProp=$1
-  cFile=$2
-  lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
-  res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
+  local rProp=$1
+  local cFile=$2
+  local lineNO=$(awk "/${rProp}/{ print NR; exit }" $cFile)
+  local res="$(sed "${lineNO}q;d" $cFile | cut -d '=' -f 2-)"
   res="$(echo $res | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
   eval "echo \"${res}\""
 }
@@ -394,10 +400,10 @@ config_read()
 # $3: config file name
 config_write()
 {
-  wProp=$1
-  wVal=$2
-  cFile=$3
-  lineNO=$(awk "/${wProp}/{ print NR; exit }" $cFile)
+  local wProp=$1
+  local wVal=$2
+  local cFile=$3
+  local lineNO=$(awk "/${wProp}/{ print NR; exit }" $cFile)
   sed -i "${lineNO}s,=.*,=${wVal}," $cFile
 }
 
@@ -405,7 +411,7 @@ config_write()
 # $1: config file path
 rewrite_config()
 {
-  confPath=$1
+  local confPath=$1
   config_write "WAS_INIT" 1 $confPath
   config_write "CLEAN_CMD" "${CLEAN_CMD}" $confPath
   config_write "TARGET_CHOOSE_CMD" "${TARGET_CHOOSE_CMD}" $confPath
@@ -439,28 +445,31 @@ rewrite_config()
 # loads given config file
 # exists script if not found
 # $1: config file path
+# shellcheck disable=SC2155
 load_config()
 {
-  cFile=$1
-  if [[ -f $cFile ]]; then
-    linesNO=$(wc -l $cFile)
-    linesNO="${linesNO:0:2}"
-    for (( ii = 1; ii <= linesNO; ii++ )); do
-      curLine=$(sed "${ii}q;d" $cFile)
-      firstChar="${curLine:0:1}"
-      if [[ $firstChar != "#" ]] && [[ $firstChar != '' ]]; then
-        cVar="$(echo $curLine | awk '{print $1}')"
-        cVal="$(config_read $cVar $cFile)"
-        export $cVar="${cVal}"
-      fi
-    done
-  else
+  local cFile=$1
+  if [[ ! -f $cFile ]]; then
     echo -e "${RED}ERROR! ${BLUE}${cFile}${RED} not found${NC}"
     exit 2
   fi
+  local linesNO=""
+  linesNO=$(wc -l $cFile)
+  linesNO="${linesNO:0:2}"
+  for (( ii = 1; ii <= linesNO; ii++ )); do
+    local curLine=$(sed "${ii}q;d" $cFile)
+    local firstChar="${curLine:0:1}"
+    if [[ $firstChar == "#" ]] || [[ $firstChar == '' ]]; then
+      continue
+    fi
+    local cVar="$(echo $curLine | awk '{print $1}')"
+    local cVal="$(config_read $cVar $cFile)"
+    export $cVar="${cVal}"
+  done
 }
 
 # writes a new build.conf file
+# shellcheck disable=SC2162
 init_conf()
 {
   echo -e "${GREEN}Initializing settings${NC}"
@@ -772,19 +781,20 @@ pre_build()
 }
 
 # magisk patch and pull
+# shellcheck disable=SC2155
 magisk_patch()
 {
-  stateA=('device')
+  local stateA=('device')
   adb_wait 1 "${stateA[@]}"
   adb_wait_unlocked
   tg_send "Patching boot.img with magisk"
   echo -e "${GREEN}Magisk patching${NC}"
   echo -e "${GREEN}Env setup${NC}"
-  idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
+  local idir="${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}/obj/PACKAGING/target_files_intermediates/*_${BUILD_PRODUCT_NAME}-target_files*/IMAGES"
   idir=$(eval echo "${idir}")
   # set these flags according to your device
-  mflags="KEEPVERITY=true LEGACYSAR=true RECOVERYMODE=false"
-  cryptoState=$(adb shell getprop ro.crypto.state)
+  local mflags="KEEPVERITY=true LEGACYSAR=true RECOVERYMODE=false"
+  local cryptoState=$(adb shell getprop ro.crypto.state)
   [[ $cryptoState == "encrypted" ]] && mflags="${mflags} KEEPFORCEENCRYPT=true"
   if ls "${idir}/vbmeta.img" &> /dev/null; then
     mflags="${mflags} PATCHVBMETAFLAG=true"
@@ -794,18 +804,19 @@ magisk_patch()
   adb shell su -c "rm -f /data/adb/magisk/new-boot.img"
   echo -e "${GREEN}Patching ${BLUE}/sdcard/boot.img${NC}"
   adb shell su -c "${mflags} /data/adb/magisk/boot_patch.sh /sdcard/boot.img" || exit 1
-  ver=$(adb shell magisk -V) || exit 1
+  local ver=$(adb shell magisk -V) || exit 1
   adb shell rm "/sdcard/Download/magisk_patched-*.img" &> /dev/null
   adb shell su -c "mv /data/adb/magisk/new-boot.img /sdcard/Download/magisk_patched-${ver}.img" || exit 1
   adb shell su -c "/data/adb/magisk/magiskboot cleanup"
   echo -e "${GREEN}Pulling version ${BLUE}${ver}${NC}"
   rm ./magisk_patched-*.img
   adb pull "/sdcard/Download/magisk_patched-${ver}.img" ./ || exit 1
-  fpath=$(realpath "./magisk_patched-${ver}.img")
+  local fpath=$(realpath "./magisk_patched-${ver}.img")
   echo -e "${GREEN}Magisk patching done. Image: ${BLUE}${fpath}${NC}"
 }
 
 # preserve images for KSU in an updatepkg
+# shellcheck disable=SC2155
 preserve_ksu()
 {
   echo -e "${GREEN}Preserving KSU images${NC}"
@@ -855,16 +866,17 @@ preserve_ksu()
 handle_push()
 {
   echo -e "${GREEN}Pushing...${NC}"
-  isOn=1 # Device is booted (reverse logic)
-  isRec=1 # Device is on recovery mode (reverse logic)
-  isPushed=1 # Weater the push went fine (reverse logic)
+  local buildh=0
+  local isOn=1 # Device is booted (reverse logic)
+  local isRec=1 # Device is on recovery mode (reverse logic)
+  local isPushed=1 # Weater the push went fine (reverse logic)
   while [[ $isOn != 0 ]] && [[ $isRec != 0 ]] && [[ $isPushed != 0 ]]; do
     adb_reset
     adb devices | grep -w 'device' &> /dev/null
     isOn=$?
     adb devices | grep -w 'recovery' &> /dev/null
     isRec=$?
-    sdcardPath=""
+    local sdcardPath=""
     if [[ $isRec == 0 ]]; then
       echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
       sdcardPath="/sdcard"
@@ -874,7 +886,7 @@ handle_push()
     else
       if [[ $TWRP_SIDELOAD == 1 ]]; then
         isPushed=0
-        buildH=1
+        buildh=1
         break
       fi
       echo -en "${RED}Please plug in a device with ADB enabled and press any key${NC}"
@@ -887,7 +899,7 @@ handle_push()
     fi
     if [[ $TWRP_SIDELOAD == 1 ]]; then
       isPushed=0
-      buildH=1
+      buildh=1
       break
     fi
     adb_wait_unlocked 1 "${sdcardPath}"
@@ -895,7 +907,7 @@ handle_push()
     isPushed=$?
     if [[ $isPushed == 0 ]]; then
       echo -e "${GREEN}Pushed to: ${BLUE}${ADB_DEST_FOLDER}${NC}"
-      buildH=1
+      buildh=1
     else
       isOn=1
       isRec=1
@@ -905,92 +917,101 @@ handle_push()
       echo
     fi
   done
-  if [[ $isPushed == 0 ]]; then
-    if [[ $AUTO_REBOOT == 0 ]]; then
-      echo -en "${YELLOW}Flash now? y/[n]/A(lways): ${NC}"
-      read isFlash
-      if [[ $isFlash == 'A' ]]; then
-        config_write "AUTO_REBOOT" 1 $configFile
-        isFlash='y'
-      fi
-    else
+  if [[ $isPushed != 0 ]]; then
+    tput bel
+    [[ $buildh == 1 ]] && return 0
+    return 1
+  fi
+
+  local isFlash='y'
+  if [[ $AUTO_REBOOT == 0 ]]; then
+    echo -en "${YELLOW}Flash now? y/[n]/A(lways): ${NC}"
+    read isFlash
+    if [[ $isFlash == 'A' ]]; then
+      config_write "AUTO_REBOOT" 1 $configFile
       isFlash='y'
     fi
-    # flash build
-    if [[ $isFlash == 'y' ]]; then
-      tg_send "Flashing build"
-      start_time=$(date +"%s")
-      if [[ $isOn == 0 ]]; then
-        echo -e "${GREEN}Rebooting to recovery${NC}"
-        adb reboot recovery
-        isDecrypted=0
-        if [[ $TWRP_SIDELOAD == 0 ]]; then
-          stateA=('recovery')
-          adb_wait 3 "${stateA[@]}"
-          echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
-        fi
-        if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-          adb_reset
-          echo -e "${GREEN}Trying decryption with provided pin${NC}"
-          adb shell twrp decrypt $TWRP_PIN
-          if [[ $? == 0 ]]; then
-            isDecrypted=1
-            echo -e "${GREEN}Data decrypted${NC}"
-            wait_for 5
-            adb_reset
-          else
-            echo -e "${RED}Data decryption failed. Please try manually${NC}"
-          fi
-        fi
-        if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-          echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
-          read -n1 temp
-          echo
-          adb_reset
-        fi
-      else
-        adb_reset
-      fi
-      # Add extra pre-flash operations here
-      fileName=$(basename $PATH_TO_BUILD_FILE)
-      echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
-      isFlashed=1 # reverse logic
-      while [[ $isFlashed != 0 ]]; do
-        if [[ $TWRP_SIDELOAD == 1 ]]; then
-          stateA=('sideload')
-          adb_wait 3 "${stateA[@]}"
-          adb sideload $PATH_TO_BUILD_FILE
-          isFlashed=$?
-        else
-          adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
-          isFlashed=$?
-        fi
-        if [[ $isFlashed != 0 ]]; then
-          echo -e "${RED}Flash error. Press any key to try again."
-          echo -en "Press 'c' to continue anyway${NC}"
-          read -n1 temp
-          [[ $temp != 'c' ]] && continue
-        fi
-        # Add additional flash operations here (magisk provided as example)
-        # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
-      done
-      if [[ $AUTO_REBOOT == 0 ]]; then
-        echo -en "${YELLOW}Press any key to reboot${NC}"
-        read -n1 temp
-        echo
-      fi
-      adb reboot
-      get_time
-      tg-send "Flashing done in <code>${buildTime}</code>"
-    fi
   fi
+  if [[ $isFlash != 'y' ]]; then
+    tput bel
+    [[ $buildh == 1 ]] && return 0
+    return 1
+  fi
+
+  # flash build
+  tg_send "Flashing build"
+  start_time=$(date +"%s")
+  if [[ $isOn == 0 ]]; then
+    echo -e "${GREEN}Rebooting to recovery${NC}"
+    adb reboot recovery
+    local isDecrypted=0
+    if [[ $TWRP_SIDELOAD == 0 ]]; then
+      local stateA=('recovery')
+      adb_wait 3 "${stateA[@]}"
+      echo -e "${GREEN}Device detected in ${BLUE}recovery${NC}"
+    fi
+    if [[ $TWRP_PIN != '' ]] && [[ $TWRP_PIN != '0' ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
+      adb_reset
+      echo -e "${GREEN}Trying decryption with provided pin${NC}"
+      adb shell twrp decrypt $TWRP_PIN
+      if [[ $? == 0 ]]; then
+        isDecrypted=1
+        echo -e "${GREEN}Data decrypted${NC}"
+        wait_for 5
+        adb_reset
+      else
+        echo -e "${RED}Data decryption failed. Please try manually${NC}"
+      fi
+    fi
+    if [[ $TWRP_PIN != '0' ]] && [[ $isDecrypted != 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
+      echo -en "${YELLOW}Press any key ${RED}after${YELLOW} decrypting data in TWRP${NC}"
+      read -n1 temp
+      echo
+      adb_reset
+    fi
+  else
+    adb_reset
+  fi
+  # Add extra pre-flash operations here
+  local fileName=$(basename $PATH_TO_BUILD_FILE)
+  echo -e "${GREEN}Flashing ${BLUE}${fileName}${NC}"
+  local isFlashed=1 # reverse logic
+  while [[ $isFlashed != 0 ]]; do
+    if [[ $TWRP_SIDELOAD == 1 ]]; then
+      local stateA=('sideload')
+      adb_wait 3 "${stateA[@]}"
+      adb sideload $PATH_TO_BUILD_FILE
+      isFlashed=$?
+    else
+      adb shell twrp install "/sdcard/${ADB_DEST_FOLDER}/${fileName}"
+      isFlashed=$?
+    fi
+    if [[ $isFlashed != 0 ]]; then
+      echo -e "${RED}Flash error. Press any key to try again."
+      echo -en "Press 'c' to continue anyway${NC}"
+      read -n1 temp
+      [[ $temp != 'c' ]] && continue
+    fi
+    # Add additional flash operations here (magisk provided as example)
+    # adb shell twrp install "/sdcard/Flash/Magisk/Magisk-v20.1\(20100\).zip"
+  done
+  if [[ $AUTO_REBOOT == 0 ]]; then
+    echo -en "${YELLOW}Press any key to reboot${NC}"
+    read -n1 temp
+    echo
+  fi
+  adb reboot
+  get_time
+  tg-send "Flashing done in <code>${buildTime}</code>"
   tput bel
+  [[ $buildh == 1 ]] && return 0
+  return 1
 }
 
 # handles the fastboot flag (-f)
 handle_fastboot()
 {
-  ans='n'
+  local ans='n'
   if [[ $AUTO_REBOOT == 1 ]]; then
     ans='y'
   else
@@ -1000,7 +1021,7 @@ handle_fastboot()
   if [[ $ans == 'y' ]]; then
     adb reboot bootloader &> /dev/null
     if [[ $? != 0 ]]; then
-      stateA=('device' 'bootloader')
+      local stateA=('device' 'bootloader')
       adb_wait 2 "${stateA[@]}"
     fi
     adb devices | grep -w "device" &> /dev/null
@@ -1011,10 +1032,10 @@ handle_fastboot()
   fi
   fastboot wait-for-device &> /dev/null
   wait_for 3
-  slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
+  local slot=$(fastboot getvar current-slot 2>&1 | head -n 1)
   slot="$(echo $slot | sed "s/current-slot: //")"
   echo -e "Currently on slot ${BLUE}${slot}${NC}"
-  slot2="a"
+  local slot2="a"
   [[ $slot == "a" ]] && slot2="b"
   if [[ $AUTO_SLOT == 1 ]]; then
     ans='y'
@@ -1040,7 +1061,7 @@ handle_fastboot()
   if [[ $FASTBOOT_PKG != 1 ]]; then
     for img in ./out/target/product/"${BUILD_PRODUCT_NAME}"/obj/PACKAGING/target_files_intermediates/*_*"${BUILD_PRODUCT_NAME}"-target_files/IMAGES/*.img; do
       [[ $img == "userdata" ]] && continue
-      partName=$(basename "${img}" | sed 's/.img//')
+      local partName=$(basename "${img}" | sed 's/.img//')
       fastboot flash "${partName}" "${img}"
     done
   else
@@ -1068,7 +1089,7 @@ handle_upload()
 {
   tg_send "Uploading build"
   echo -e "${GREEN}Uploading...${NC}"
-  isUploaded=0
+  local isUploaded=0
   if [[ -f $PATH_TO_BUILD_FILE ]]; then
     start_time=$(date +"%s")
     pid=""
@@ -1090,73 +1111,7 @@ handle_upload()
       trap tg_clean SIGINT
     fi
   fi
-  if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
-    echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
-    touch "${PATH_TO_BUILD_FILE}.sha256sum"
-    sha256sum "${PATH_TO_BUILD_FILE}" | cut -d ' ' -f1 > "${PATH_TO_BUILD_FILE}.sha256sum"
-    echo >> "${PATH_TO_BUILD_FILE}.sha256sum"
-  fi
-  eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
-  if [[ $isUploaded == 1 ]]; then
-    echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
-    if [[ $isSilent == 0 ]]; then
-      fileName=$(basename $PATH_TO_BUILD_FILE)
-      # Edit next line according to the way you fetch the link:
-      isFileLinkFailed=1
-      isSHALinkFailed=1
-      if [[ $UPLOAD_LINK_CMD != "" ]]; then
-        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
-        fileLink=$(eval $cmd)
-        isFileLinkFailed=$?
-        cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
-        shaLink=$(eval $cmd)
-        isSHALinkFailed=$?
-      fi
-      if [[ $isFileLinkFailed != 0 ]] && [[ $isSHALinkFailed != 0 ]] && [[ $UPLOAD_LINK_ALT_CMD != '' ]]; then
-        combinedLinks=$(eval $UPLOAD_LINK_ALT_CMD)
-        res1=$?
-        fileLink=$(echo "$combinedLinks" | cut -f 1 -d " ")
-        res2=$?
-        shaLink=$(echo "$combinedLinks" | cut -f 2 -d " ")
-        res3=$?
-        if [[ $res1 == 0 ]] && [[ $res2 == 0 ]] && [[ $fileLink != "" ]]; then
-          isFileLinkFailed=0
-        fi
-        if [[ $res1 == 0 ]] && [[ $res3 == 0 ]] && [[ $shaLink != "" ]]; then
-          isSHALinkFailed=0
-        fi
-      fi
-      if [[ $isFileLinkFailed == 0 ]]; then
-        echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
-        if [[ $isSHALinkFailed == 0 ]]; then
-          tg_send "Uploading done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${shaLink}\">SHA-256</a>"
-        elif [[ $isFileLinkFailed == 0 ]]; then
-          tg_send "Uploading done in \
-<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
-        else
-          tg_send "Uploading done in \
-<code>${buildTime}</code>"
-        fi
-      else
-        echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
-        tg_send "Uploading done in <code>${buildTime}</code>"
-      fi
-      # unpin as we are done!
-      if [[ $isSilent == 0 ]]; then
-        ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
-        trap - SIGINT
-      fi
-      if [[ $UPLOAD_DONE_MSG != '' ]] && [[ $isSilent == 0 ]]; then
-        ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${UPLOAD_DONE_MSG}"
-      fi
-    fi
-    if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
-      eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
-      disown
-    fi
-    buildH=1
-  else
+  if [[ $isUploaded != 1 ]]; then
     echo -e "${RED}Upload failed${NC}"
     tg_send "Upload failed"
     # unpin as we are done!
@@ -1167,9 +1122,82 @@ handle_upload()
         ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${FAILURE_MSG}"
       fi
     fi
-    buildH=0
+    tput bel
+    return 1
+  fi
+  if [[ ! -f "${PATH_TO_BUILD_FILE}.sha256sum" ]]; then
+    echo -e "${RED}Couldn't find sha256sum file. Generating.${NC}"
+    touch "${PATH_TO_BUILD_FILE}.sha256sum"
+    sha256sum "${PATH_TO_BUILD_FILE}" | cut -d ' ' -f1 > "${PATH_TO_BUILD_FILE}.sha256sum"
+    echo >> "${PATH_TO_BUILD_FILE}.sha256sum"
+  fi
+  eval "${UPLOAD_CMD} ${PATH_TO_BUILD_FILE}.sha256sum ${UPLOAD_DEST}"
+  echo -e "${GREEN}Uploaded to: ${BLUE}${UPLOAD_DEST}${NC}"
+  if [[ $UPLOAD_PATH != '' ]] && [[ $FILE_MANAGER_CMD != '' ]]; then
+    eval "${FILE_MANAGER_CMD} ${UPLOAD_PATH} &> /dev/null &"
+    disown
+  fi
+  if [[ $isSilent != 0 ]]; then
+    tput bel
+    return 0
+  fi
+  local fileName=$(basename $PATH_TO_BUILD_FILE)
+  # Edit next line according to the way you fetch the link:
+  local isFileLinkFailed=1
+  local isSHALinkFailed=1
+  if [[ $UPLOAD_LINK_CMD != "" ]]; then
+    local cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}"
+    local fileLink=""
+    fileLink=$(eval $cmd)
+    isFileLinkFailed=$?
+    cmd="${UPLOAD_LINK_CMD} ${UPLOAD_DEST}/${fileName}.sha256sum"
+    local shaLink=""
+    shaLink=$(eval $cmd)
+    isSHALinkFailed=$?
+  fi
+  if [[ $isFileLinkFailed != 0 ]] && [[ $isSHALinkFailed != 0 ]] && [[ $UPLOAD_LINK_ALT_CMD != '' ]]; then
+    local combinedLinks=""
+    combinedLinks=$(eval $UPLOAD_LINK_ALT_CMD)
+    local res1=$?
+    local fileLink=""
+    fileLink=$(echo "$combinedLinks" | cut -f 1 -d " ")
+    local res2=$?
+    local shaLink=""
+    shaLink=$(echo "$combinedLinks" | cut -f 2 -d " ")
+    local res3=$?
+    if [[ $res1 == 0 ]] && [[ $res2 == 0 ]] && [[ $fileLink != "" ]]; then
+      isFileLinkFailed=0
+    fi
+    if [[ $res1 == 0 ]] && [[ $res3 == 0 ]] && [[ $shaLink != "" ]]; then
+      isSHALinkFailed=0
+    fi
+  fi
+  if [[ $isFileLinkFailed == 0 ]]; then
+    echo -e "${GREEN}Link: ${BLUE}${fileLink}${NC}"
+    if [[ $isSHALinkFailed == 0 ]]; then
+      tg_send "Uploading done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>, <a href=\"${shaLink}\">SHA-256</a>"
+    elif [[ $isFileLinkFailed == 0 ]]; then
+      tg_send "Uploading done in \
+<code>${buildTime}</code>: <a href=\"${fileLink}\">LINK</a>"
+    else
+      tg_send "Uploading done in \
+<code>${buildTime}</code>"
+    fi
+  else
+    echo -e "${RED}Getting link for ${BLUE}${BUILD_PRODUCT_NAME}${GREEN} failed${NC}"
+    tg_send "Uploading done in <code>${buildTime}</code>"
+  fi
+  # unpin as we are done!
+  if [[ $isSilent == 0 ]]; then
+    ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+    trap - SIGINT
+  fi
+  if [[ $UPLOAD_DONE_MSG != '' ]] && [[ $isSilent == 0 ]]; then
+    ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${UPLOAD_DONE_MSG}"
   fi
   tput bel
+  return 0
 }
 
 # handles remaining build file
@@ -1199,7 +1227,6 @@ handle_rm()
       ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
       trap - SIGINT
     fi
-    exit 0
   fi
 }
 
@@ -1241,7 +1268,7 @@ get_time()
 # $1 time to wait in seconds
 wait_for()
 {
-  secs=$1
+  local secs=$1
   for (( i = $secs; i >= 1; i-- )); do
     tput sc
     echo -en "${YELLOW}Waiting for ${BLUE}${i}${NC} ${YELLOW}seconds${NC}"
@@ -1293,151 +1320,151 @@ preBuildScripts=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h)
-    # help
-    print_help
-    shift
-    exit 0
-    ;;
-    -i)
-    # initialize (write a new build.conf)
-    init_conf
-    echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
-    read isExit
-    if [[ $isExit == 'n' ]]; then
+      # help
+      print_help
+      shift
       exit 0
-    fi
-    shift
-    ;;
+      ;;
+    -i)
+      # initialize (write a new build.conf)
+      init_conf
+      echo -en "${YELLOW}Continue script? [${BLUE}y${YELLOW}]/n: ${NC}"
+      read isExit
+      if [[ $isExit == 'n' ]]; then
+        exit 0
+      fi
+      shift
+      ;;
     -u)
-    # upload / user build
-    isUpload=1
-    shift
-    ;;
+      # upload / user build
+      isUpload=1
+      shift
+      ;;
     -p)
-    # push
-    isPush=1
-    if [[ $flashConflict == 0 ]]; then
-      flashConflict="-p"
-    else
-      echo -e "${RED}ERROR! Can't use ${BLUE}-p${RED} with ${BLUE}${flashConflict}${NC}"
-      exit 3
-    fi
-    shift
-    ;;
+      # push
+      isPush=1
+      if [[ $flashConflict == 0 ]]; then
+        flashConflict="-p"
+      else
+        echo -e "${RED}ERROR! Can't use ${BLUE}-p${RED} with ${BLUE}${flashConflict}${NC}"
+        exit 3
+      fi
+      shift
+      ;;
     -f)
-    # fastboot
-    isFastboot=1
-    if [[ $flashConflict == 0 ]]; then
-      flashConflict="-f"
-    else
-      echo -e "${RED}ERROR! Can't use ${BLUE}-f${RED} with ${BLUE}${flashConflict}${NC}"
-      exit 3
-    fi
-    shift
-    ;;
+      # fastboot
+      isFastboot=1
+      if [[ $flashConflict == 0 ]]; then
+        flashConflict="-f"
+      else
+        echo -e "${RED}ERROR! Can't use ${BLUE}-f${RED} with ${BLUE}${flashConflict}${NC}"
+        exit 3
+      fi
+      shift
+      ;;
     -c)
-    # clean
-    isClean=1
-    shift
-    ;;
-    -s)
-    # silent
-    isSilent=1
-    shift
-    ;;
+      # clean
+      isClean=1
+      shift
+      ;;
+      -s)
+      # silent
+      isSilent=1
+      shift
+      ;;
     -d)
-    # dry
-    isDry=1
-    shift
-    ;;
+      # dry
+      isDry=1
+      shift
+      ;;
     "--keep-file"|-k)
-    # keep original build file
-    isKeep=1
-    shift
-    ;;
+      # keep original build file
+      isKeep=1
+      shift
+      ;;
     "--magisk"|-m)
-    # patch and pull magisk from boot
-    isMagisk=1
-    shift
-    ;;
+      # patch and pull magisk from boot
+      isMagisk=1
+      shift
+      ;;
     "--pksu")
-    # preserve images for KSU in an updatepkg
-    isPKSU=1
-    shift
-    ;;
+      # preserve images for KSU in an updatepkg
+      isPKSU=1
+      shift
+      ;;
     "--power")
-    # power operations
-    powerOpt=$2
-    if [[ $powerOpt != "off" ]] && [[ $powerOpt != "reboot" ]]; then
-      echo -e "${RED}ERROR! Power option not recognized.${NC}"
-      exit 1
-    fi
-    shift 2
-    ;;
+      # power operations
+      powerOpt=$2
+      if [[ $powerOpt != "off" ]] && [[ $powerOpt != "reboot" ]]; then
+        echo -e "${RED}ERROR! Power option not recognized.${NC}"
+        exit 1
+      fi
+      shift 2
+      ;;
     "--choose")
-    # diff lunch commands
-    if [[ $flagConflict == 0 ]]; then
-      flagConflict="--choose"
-    else
-      echo -e "${RED}ERROR! Can't use ${BLUE}--choose${RED} with ${BLUE}${flagConflict}${NC}"
-      exit 3
-    fi
-    TARGET_CHOOSE_CMD=$2
-    targetChanged=1
-    shift 2
-    ;;
+      # diff lunch commands
+      if [[ $flagConflict == 0 ]]; then
+        flagConflict="--choose"
+      else
+        echo -e "${RED}ERROR! Can't use ${BLUE}--choose${RED} with ${BLUE}${flagConflict}${NC}"
+        exit 3
+      fi
+      TARGET_CHOOSE_CMD=$2
+      targetChanged=1
+      shift 2
+      ;;
     "--product")
-    # diff product fileName
-    if [[ $flagConflict == 0 ]]; then
-      flagConflict="--product"
-    else
-      echo -e "${RED}ERROR! Can't use ${BLUE}--product${RED} with ${BLUE}${flagConflict}${NC}"
-      exit 3
-    fi
-    BUILD_PRODUCT_NAME=$2
-    productChanged=1
-    shift 2
-    ;;
+      # diff product fileName
+      if [[ $flagConflict == 0 ]]; then
+        flagConflict="--product"
+      else
+        echo -e "${RED}ERROR! Can't use ${BLUE}--product${RED} with ${BLUE}${flagConflict}${NC}"
+        exit 3
+      fi
+      BUILD_PRODUCT_NAME=$2
+      productChanged=1
+      shift 2
+      ;;
     "--type")
-    # diff build type command
-    BUILD_TYPE_CMD=$2
-    typeChanged=1
-    shift 2
-    ;;
+      # diff build type command
+      BUILD_TYPE_CMD=$2
+      typeChanged=1
+      shift 2
+      ;;
     "--config")
-    # diff config file
-    if [[ $flagConflict == 0 ]]; then
-      flagConflict="--config"
-    else
-      echo -e "${RED}ERROR! Can't use ${BLUE}--config${RED} with ${BLUE}${flagConflict}${NC}"
-      exit 3
-    fi
-    configFile=$2
-    load_config $configFile
-    shift 2
-    ;;
+      # diff config file
+      if [[ $flagConflict == 0 ]]; then
+        flagConflict="--config"
+      else
+        echo -e "${RED}ERROR! Can't use ${BLUE}--config${RED} with ${BLUE}${flagConflict}${NC}"
+        exit 3
+      fi
+      configFile=$2
+      load_config $configFile
+      shift 2
+      ;;
     "--tg-config")
-    # diff telegram config file
-    TG_SEND_CFG_FILE=$2
-    tgConfigChanged=1
-    shift 2
-    ;;
+      # diff telegram config file
+      TG_SEND_CFG_FILE=$2
+      tgConfigChanged=1
+      shift 2
+      ;;
     "--installclean"|"--i-c")
-    # make installclean
-    installClean=1
-    shift
-    ;;
+      # make installclean
+      installClean=1
+      shift
+      ;;
     "--script")
-    # run a pre-build script
-    preBuildScripts="${preBuildScripts}$2 "
-    shift 2
-    ;;
+      # run a pre-build script
+      preBuildScripts="${preBuildScripts}$2 "
+      shift 2
+      ;;
     --*|-*)
-    # unsupported flags
-    echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
-    print_help
-    exit 1
-    ;;
+      # unsupported flags
+      echo -e "${RED}ERROR! Unsupported flag ${BLUE}$1${NC}" >&2
+      print_help
+      exit 1
+      ;;
   esac
 done
 echo
@@ -1481,108 +1508,114 @@ else
 fi
 
 # handle built file
-if [[ $buildRes == 0 ]]; then # if build succeeded
-  # Count build files:
-  NOFiles=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
-      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /)
-  if [[ $NOFiles -gt 1 ]]; then
-    echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
-    PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
-      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -printf "%B@;%h/%f\n" \
-      | sort -n | sed -n -e "1{p;q}" | cut -d ";" -f 2)
-  elif [[ $NOFiles == 1 ]]; then
-    PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
-      -maxdepth 1 -type f -name "${BUILD_FILE_NAME}")
-  else
-    echo -en "${RED}ERROR! Could not find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
-    echo -e "in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
-    exit 1
-  fi
-  echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
-  if [[ $isDry == 0 ]]; then
-    tg_send "Build done in <code>${buildTime}</code>"
+if [[ $buildRes != 0 ]]; then
+  # if build fails
+  if [[ $isSilent != 0 ]]; then
     tput bel
+    exit $buildRes
   fi
-
-  buildH=0 # build handled? is set inside handle_* macros
-
-  # magisk patching
-  if [[ $isMagisk == 1 ]]; then
-    magisk_patch
-  fi
-  # prerserve KSU
-  if [[ $isPKSU == 1 ]]; then
-    preserve_ksu
-  fi
-  # push build
-  if [[ $isPush == 1 ]]; then
-    handle_push
-  fi
-  # fastboot flash
-  if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
-    handle_fastboot
-  fi
-  # upload build
-  if [[ $isUpload == 1 ]]; then
-    handle_upload
-  fi
-  # remove original build file
-  if [[ $buildH == 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
-    handle_rm
-  fi
-
-  # unpin as we are done!
-  if [[ $isSilent == 0 ]]; then
-    ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
-    trap - SIGINT
-  fi
-
-  if [[ $HANDLE_DONE_MSG != '' ]] && [[ $isSilent == 0 ]] && [[ $isUpload != 1 ]]; then
-    ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${HANDLE_DONE_MSG}"
-  fi
-
-  # Should only reach here if not handled yet
-  if [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
-    mv $PATH_TO_BUILD_FILE "${UNHANDLED_PATH}"/
-    mv $PATH_TO_BUILD_FILE.sha256sum "${UNHANDLED_PATH}"/
-    if [[ $FILE_MANAGER_CMD != '' ]]; then
-      eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
-      disown
-    fi
-  fi
-
-  # power operations
-  if [[ $powerOpt == "off" ]]; then
-    echo -e "${GREEN}Powering off in ${BLUE}1 minute${NC}"
-    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
-    wait_for 60
-    poweroff
-  elif [[ $powerOpt == "reboot" ]]; then
-    echo -e "${GREEN}Rebooting in ${BLUE}1 minute${NC}"
-    echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
-    wait_for 60
-    reboot
-  fi
-
-  exit $([[ $isUpload == 0 ]] || [[ $isUploaded == 1 ]])
-elif [[ $isSilent == 0 ]]; then # if build failed
   if [[ -f "${SOURCE_PATH}/out/error.log" ]] && [[ -s "${SOURCE_PATH}/out/error.log" ]]; then
     tg_send "Build failed after <code>${buildTime}</code>."
     tg_send "${SOURCE_PATH}/out/error.log" # unpins for us
     if [[ $FAILURE_MSG != '' ]]; then
       ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${FAILURE_MSG}"
     fi
-  else
-    echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
-    tg_send "Build was canceled after <code>${buildTime}</code>."
-    # unpin as we are done!
-    if [[ $isSilent == 0 ]]; then
-      ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
-      trap - SIGINT
-    fi
+    tput bel
+    exit $buildRes
+  fi
+  echo -e "${RED}Can't find error file. Assuming build got canceled${NC}"
+  tg_send "Build was canceled after <code>${buildTime}</code>."
+  # unpin as we are done!
+  if [[ $isSilent == 0 ]]; then
+    ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+    trap - SIGINT
+  fi
+  tput bel
+  exit $buildRes
+fi
+
+# Build passed
+# Count build files:
+NOFiles=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+    -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -prune -print | grep -c /)
+if [[ $NOFiles -gt 1 ]]; then
+  echo -e "${GREEN}Found ${BLUE}${NOFiles}${GREEN} build files. Using newest${NC}"
+  PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+    -maxdepth 1 -type f -name "${BUILD_FILE_NAME}" -printf "%B@;%h/%f\n" \
+    | sort -n | sed -n -e "1{p;q}" | cut -d ";" -f 2)
+elif [[ $NOFiles == 1 ]]; then
+  PATH_TO_BUILD_FILE=$(find "${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}" \
+    -maxdepth 1 -type f -name "${BUILD_FILE_NAME}")
+else
+  echo -en "${RED}ERROR! Could not find build file ${BLUE}${BUILD_FILE_NAME}${RED} "
+  echo -e "in ${BLUE}${SOURCE_PATH}/out/target/product/${BUILD_PRODUCT_NAME}${NC}"
+  exit 1
+fi
+echo -e "${GREEN}Build file: ${BLUE}${PATH_TO_BUILD_FILE}${NC}"
+if [[ $isDry == 0 ]]; then
+  tg_send "Build done in <code>${buildTime}</code>"
+  tput bel
+fi
+
+buildH=0 # build handled?
+uploaded=0 # build uploaded
+
+# magisk patching
+if [[ $isMagisk == 1 ]]; then
+  magisk_patch
+fi
+# prerserve KSU
+if [[ $isPKSU == 1 ]]; then
+  preserve_ksu
+fi
+# push build
+if [[ $isPush == 1 ]]; then
+  handle_push && buildH=1
+fi
+# fastboot flash
+if [[ $isFastboot == 1 ]] && [[ $isPush != 1 ]]; then
+  handle_fastboot
+fi
+# upload build
+if [[ $isUpload == 1 ]]; then
+  handle_upload && buildH=1 && uploaded=1
+fi
+# remove original build file
+if [[ $buildH == 1 ]] && [[ $TWRP_SIDELOAD == 0 ]]; then
+  handle_rm
+fi
+
+# unpin as we are done!
+if [[ $isSilent == 0 ]]; then
+  ./telegramSend.sh --unpin --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" " "
+  trap - SIGINT
+fi
+
+if [[ $HANDLE_DONE_MSG != '' ]] && [[ $isSilent == 0 ]] && [[ $isUpload != 1 ]]; then
+  ./telegramSend.sh --cite --tmp "${tmpDir}" --config "${TG_SEND_CFG_FILE}" "${HANDLE_DONE_MSG}"
+fi
+
+# Should only reach here if not handled yet
+if [[ $buildH != 1 ]] && [[ $UNHANDLED_PATH != '' ]] && [[ $isKeep != 1 ]]; then
+  mv $PATH_TO_BUILD_FILE "${UNHANDLED_PATH}"/
+  mv $PATH_TO_BUILD_FILE.sha256sum "${UNHANDLED_PATH}"/
+  if [[ $FILE_MANAGER_CMD != '' ]]; then
+    eval "${FILE_MANAGER_CMD} ${UNHANDLED_PATH} &> /dev/null &"
+    disown
   fi
 fi
 
-# only reach if build fails
-tput bel
-exit $buildRes
+# power operations
+if [[ $powerOpt == "off" ]]; then
+  echo -e "${GREEN}Powering off in ${BLUE}1 minute${NC}"
+  echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
+  wait_for 60
+  poweroff
+elif [[ $powerOpt == "reboot" ]]; then
+  echo -e "${GREEN}Rebooting in ${BLUE}1 minute${NC}"
+  echo -e "${GREEN}Press ${BLUE}Ctrl+C${GREEN} to cancel${NC}"
+  wait_for 60
+  reboot
+fi
+
+exit $([[ $isUpload == 0 ]] || [[ $uploaded == 1 ]])
