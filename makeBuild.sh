@@ -857,7 +857,7 @@ preserve_ksu()
   [ -f "$zipname" ] && rm "$zipname"
   # create the zip
   echo -e "${GREEN}Zipping images${NC}"
-  zip -j "$zipname" "$zipdir"/*
+  zip -0 -j "$zipname" "$zipdir"/*
   rm -rf "$zipdir"
   echo -e "${GREEN}Created ${BLUE}${zipname}${NC}"
 }
